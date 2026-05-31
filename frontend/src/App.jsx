@@ -11,11 +11,16 @@ function App() {
   const { user, logout, fetchProducts, fetchSalesHistory } = usePosStore()
   const [activeTab, setActiveTab] = useState('order')
 
-  // Fetch initial data when user is authenticated
+  // Fetch initial data when user is authenticated and set default landing page based on role
   useEffect(() => {
     if (user) {
       fetchProducts()
       fetchSalesHistory()
+      if (user.role === 'Administrator') {
+        setActiveTab('dashboard')
+      } else {
+        setActiveTab('order')
+      }
     }
   }, [user, fetchProducts, fetchSalesHistory])
 
@@ -82,64 +87,60 @@ function App() {
       {/* Shell Container */}
       <div className="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto p-4 md:p-6 gap-6 z-10">
         
-        {/* Navigation Sidebar */}
-        <nav className="flex flex-row md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-2 md:pb-0 w-full md:w-[220px] md:shrink-0 self-start">
-          <button
-            onClick={() => setActiveTab('order')}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all ${
-              activeTab === 'order'
-                ? 'bg-slate-900 border border-slate-850 text-emerald-450'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <ShoppingCart className="w-4 h-4" />
-            <span>Kasir</span>
-          </button>
-
-          {user.role === 'Administrator' && (
+        {/* Navigation Sidebar (Only shown for Administrator) */}
+        {user.role === 'Administrator' && (
+          <nav className="flex flex-row md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-2 md:pb-0 w-full md:w-[220px] md:shrink-0 self-start">
             <button
               onClick={() => setActiveTab('dashboard')}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all ${
                 activeTab === 'dashboard'
-                  ? 'bg-slate-900 border border-slate-850 text-emerald-455'
+                  ? 'bg-slate-900 border border-slate-850 text-emerald-400'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <LayoutDashboard className="w-4 h-4" />
               <span>Dashboard</span>
             </button>
-          )}
 
-          {user.role === 'Administrator' && (
+            <button
+              onClick={() => setActiveTab('order')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all ${
+                activeTab === 'order'
+                  ? 'bg-slate-900 border border-slate-850 text-emerald-400'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <ShoppingCart className="w-4 h-4" />
+              <span>Kasir (Order)</span>
+            </button>
+
             <button
               onClick={() => setActiveTab('menu')}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all ${
                 activeTab === 'menu'
-                  ? 'bg-slate-900 border border-slate-850 text-emerald-460'
+                  ? 'bg-slate-900 border border-slate-850 text-emerald-400'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <Database className="w-4 h-4" />
               <span>Menu / Stok</span>
             </button>
-          )}
 
-          {user.role === 'Administrator' && (
             <button
               onClick={() => setActiveTab('reports')}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all ${
                 activeTab === 'reports'
-                  ? 'bg-slate-900 border border-slate-850 text-emerald-465'
+                  ? 'bg-slate-900 border border-slate-850 text-emerald-400'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               <FileBarChart2 className="w-4 h-4" />
               <span>Laporan</span>
             </button>
-          )}
-        </nav>
+          </nav>
+        )}
 
-        {/* View Contents Pane */}
+        {/* View Contents Pane (Takes full width for Cashier since sidebar is hidden) */}
         <main className="flex-1 min-w-0 bg-slate-900/10 border border-slate-850/50 p-4 md:p-6 rounded-3xl backdrop-blur-sm">
           {renderView()}
         </main>
@@ -148,4 +149,4 @@ function App() {
   )
 }
 
-export default App
+export default App;
