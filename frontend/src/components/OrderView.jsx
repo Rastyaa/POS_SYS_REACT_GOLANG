@@ -12,8 +12,9 @@ export default function OrderView() {
   // Helpers
   const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num)
 
-  // Filters
-  const categories = ['Semua', 'Coffee', 'Non-Coffee', 'Bakery', 'Beverage']
+  // Dynamic Categories merge with standard resto categories
+  const defaultCategories = ['Makanan Utama', 'Minuman', 'Cemilan', 'Dessert']
+  const categories = ['Semua', ...new Set([...defaultCategories, ...products.map((p) => p.category).filter(Boolean)])]
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || p.sku.toLowerCase().includes(searchTerm.toLowerCase())
@@ -28,19 +29,19 @@ export default function OrderView() {
   const total = subtotal - discountAmount + taxAmount
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 text-white h-[calc(100vh-140px)]">
+    <div className="flex flex-col lg:flex-row gap-6 text-slate-800 h-[calc(100vh-140px)]">
       {/* Product Catalog Column */}
       <div className="flex-1 flex flex-col space-y-4 min-w-0">
         {/* Search & Categories */}
-        <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-slate-900/40 border border-slate-800 p-3 rounded-2xl">
+        <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white border border-slate-200 p-3 rounded-2xl shadow-sm">
           <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute inset-y-0 left-3 flex items-center w-4 h-4 text-slate-500 my-auto" />
+            <Search className="absolute inset-y-0 left-3 flex items-center w-4 h-4 text-slate-400 my-auto" />
             <input
               type="text"
               placeholder="Cari menu atau SKU..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-850 text-white rounded-xl py-2 pl-9 pr-4 placeholder-slate-650 focus:outline-none focus:border-emerald-500 transition-all text-xs"
+              className="w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl py-2 pl-9 pr-4 placeholder-slate-450 focus:outline-none focus:border-slate-800 focus:bg-white transition-all text-xs font-medium"
             />
           </div>
           <div className="flex gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
@@ -50,8 +51,8 @@ export default function OrderView() {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all ${
                   selectedCategory === cat
-                    ? 'bg-slate-850 border border-slate-700 text-emerald-400'
-                    : 'bg-slate-950/40 text-slate-400 border border-transparent hover:text-slate-350'
+                    ? 'bg-slate-900 border border-slate-950 text-white shadow-sm'
+                    : 'bg-slate-100 text-slate-650 border border-transparent hover:text-slate-900 hover:bg-slate-200/60'
                 }`}
               >
                 {cat}
@@ -61,67 +62,77 @@ export default function OrderView() {
         </div>
 
         {/* Product Grid */}
-        <div className="flex-1 overflow-y-auto pr-1 grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="flex-1 overflow-y-auto pr-2 pb-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredProducts.map((p) => {
             const isOutOfStock = p.stock <= 0
             const cartItem = cart.find((item) => item.product.id === p.id)
             const cartQty = cartItem?.quantity || 0
 
             return (
-              <button
+              <div
                 key={p.id}
-                disabled={isOutOfStock}
-                onClick={() => addToCart(p)}
-                className={`group flex flex-col text-left bg-slate-900/40 border border-slate-800 rounded-2xl overflow-hidden hover:border-slate-700/80 active:scale-[0.98] transition-all relative ${
+                role="button"
+                tabIndex={0}
+                onClick={() => { if (!isOutOfStock) addToCart(p); }}
+                onKeyDown={(e) => { if (!isOutOfStock && (e.key === 'Enter' || e.key === ' ')) addToCart(p); }}
+                className={`group flex flex-col text-left bg-white border border-slate-200/85 hover:border-slate-400 rounded-2xl overflow-hidden hover:shadow-md active:scale-[0.98] transition-all relative cursor-pointer ${
                   isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
-                <div className="aspect-[4/3] w-full bg-slate-950 relative overflow-hidden">
-                  {p.image && <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300" />}
+                <div className="aspect-[4/3] w-full bg-white relative overflow-hidden shrink-0 border-b border-slate-100 p-2 flex items-center justify-center">
+                  {p.image ? (
+                    <img src={p.image} alt={p.name} className="w-full h-full object-contain group-hover:scale-105 transition-all duration-300 drop-shadow-sm" />
+                  ) : (
+                    <div className="w-full h-full bg-slate-50 rounded-lg flex items-center justify-center">
+                      <span className="text-slate-300 text-xs font-medium">No Image</span>
+                    </div>
+                  )}
                   {isOutOfStock ? (
-                    <div className="absolute inset-0 bg-slate-950/80 flex items-center justify-center">
-                      <span className="bg-red-500/20 text-red-400 text-xs px-2.5 py-1 rounded-full font-bold border border-red-500/30">Habis</span>
+                    <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                      <span className="bg-red-50 text-red-650 text-xs px-2.5 py-1 rounded-full font-bold border border-red-200">Habis</span>
                     </div>
                   ) : p.stock <= 5 ? (
-                    <span className="absolute top-2 left-2 bg-amber-500/20 text-amber-400 text-[9px] font-bold px-1.5 py-0.5 rounded border border-amber-500/30 uppercase tracking-wider">
-                      Stok Sisa {p.stock}
+                    <span className="absolute top-2 left-2 bg-amber-50 text-amber-600 text-[10px] font-bold px-2 py-0.5 rounded border border-amber-200 uppercase tracking-wider z-10">
+                      Sisa {p.stock}
                     </span>
                   ) : null}
                 </div>
-                <div className="p-3 flex-1 flex flex-col justify-between space-y-1">
+                <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2 bg-white">
                   <div>
-                    <h4 className="font-bold text-xs text-slate-200 line-clamp-1">{p.name}</h4>
-                    <p className="text-[9px] text-slate-500 uppercase tracking-wider font-semibold">SKU: {p.sku}</p>
+                    <h4 className="font-bold text-sm text-slate-800 group-hover:text-slate-950 line-clamp-2 leading-tight min-h-[40px]">{p.name || 'Produk Tanpa Nama'}</h4>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-wider font-bold mt-1">SKU: {p.sku || '-'}</p>
                   </div>
-                  <div className="flex justify-between items-center pt-2">
-                    <span className="font-bold text-emerald-400 text-xs">{formatIDR(p.price)}</span>
+                  <div className="flex justify-between items-end pt-1">
+                    <span className="font-extrabold text-slate-900 text-sm">{formatIDR(p.price || 0)}</span>
                     {cartQty > 0 && (
-                      <span className="bg-emerald-500 text-slate-950 text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                      <span className="bg-blue-600 text-white text-[11px] font-bold w-6 h-6 flex items-center justify-center rounded-full shadow-sm animate-scaleIn">
                         {cartQty}
                       </span>
                     )}
                   </div>
                 </div>
-              </button>
+              </div>
             )
           })}
 
           {filteredProducts.length === 0 && (
-            <div className="col-span-full text-center py-20 bg-slate-900/10 border border-slate-850 rounded-2xl">
-              <p className="text-slate-500 text-sm">Menu tidak ditemukan.</p>
+            <div className="col-span-full text-center py-20 bg-slate-50 border border-slate-200 rounded-2xl">
+              <p className="text-slate-450 text-sm font-semibold">Menu tidak ditemukan.</p>
             </div>
           )}
+          </div>
         </div>
       </div>
 
       {/* Cart Sidebar Column */}
-      <div className="w-full lg:w-[360px] flex flex-col bg-slate-900/40 border border-slate-800 rounded-3xl p-4 space-y-4">
-        <div className="flex justify-between items-center border-b border-slate-800/80 pb-3">
-          <h3 className="font-bold text-sm flex items-center gap-2">
-            <ShoppingCart className="w-4 h-4 text-emerald-400" />
+      <div className="w-full lg:w-[360px] flex flex-col bg-white border border-slate-200 rounded-3xl p-4 space-y-4 shadow-sm">
+        <div className="flex justify-between items-center border-b border-slate-200 pb-3">
+          <h3 className="font-bold text-sm flex items-center gap-2 text-slate-850">
+            <ShoppingCart className="w-4 h-4 text-slate-800" />
             Keranjang
           </h3>
-          <span className="bg-slate-850 border border-slate-700 text-slate-350 text-xs px-2.5 py-0.5 rounded-full font-bold">
+          <span className="bg-slate-100 border border-slate-200 text-slate-600 text-xs px-2.5 py-0.5 rounded-full font-bold">
             {cart.reduce((sum, i) => sum + i.quantity, 0)} Item
           </span>
         </div>
@@ -129,34 +140,34 @@ export default function OrderView() {
         {/* Cart List */}
         <div className="flex-1 overflow-y-auto space-y-3 pr-1">
           {cart.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-2 py-16">
-              <ShoppingCart className="w-8 h-8 opacity-25" />
-              <p className="text-xs">Keranjang masih kosong</p>
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2 py-16">
+              <ShoppingCart className="w-8 h-8 opacity-40" />
+              <p className="text-xs font-semibold">Keranjang masih kosong</p>
             </div>
           ) : (
             cart.map((item) => (
-              <div key={item.product.id} className="bg-slate-950/40 p-3 rounded-xl border border-slate-850 flex gap-3">
+              <div key={item.product.id} className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 flex gap-3 animate-slideIn">
                 <div className="flex-1 min-w-0">
-                  <h5 className="font-bold text-xs text-slate-200 truncate">{item.product.name}</h5>
-                  <p className="text-[10px] text-emerald-400 font-semibold">{formatIDR(item.product.price)}</p>
+                  <h5 className="font-bold text-xs text-slate-800 truncate">{item.product.name}</h5>
+                  <p className="text-[10px] text-slate-650 font-semibold">{formatIDR(item.product.price)}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
-                    className="p-1 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-white transition-all"
+                    className="p-1 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all shadow-sm"
                   >
                     <Minus className="w-3.5 h-3.5" />
                   </button>
-                  <span className="text-xs font-bold text-slate-200 w-4 text-center">{item.quantity}</span>
+                  <span className="text-xs font-bold text-slate-800 w-4 text-center">{item.quantity}</span>
                   <button
                     onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
-                    className="p-1 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 hover:text-white transition-all"
+                    className="p-1 bg-white border border-slate-200 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all shadow-sm"
                   >
                     <Plus className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => removeFromCart(item.product.id)}
-                    className="p-1 text-slate-600 hover:text-red-400 transition-all ml-1"
+                    className="p-1 text-slate-400 hover:text-red-650 transition-all ml-1"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -167,10 +178,10 @@ export default function OrderView() {
         </div>
 
         {/* Discount & Totals */}
-        <div className="border-t border-slate-800/80 pt-3 space-y-3">
+        <div className="border-t border-slate-200 pt-3 space-y-3">
           {/* Discount Field */}
           <div className="relative">
-            <span className="absolute inset-y-0 left-3 flex items-center pl-0.5 text-slate-500">
+            <span className="absolute inset-y-0 left-3 flex items-center pl-0.5 text-slate-400">
               <Percent className="w-3.5 h-3.5" />
             </span>
             <input
@@ -180,36 +191,36 @@ export default function OrderView() {
               max="100"
               value={discount || ''}
               onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-              className="w-full bg-slate-950 border border-slate-850 rounded-xl py-2 pl-9 pr-4 placeholder-slate-600 focus:outline-none focus:border-emerald-500 text-xs"
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-9 pr-4 placeholder-slate-400 focus:outline-none focus:border-slate-800 focus:bg-white text-xs font-medium"
             />
           </div>
 
           {/* Checkout Totals */}
-          <div className="bg-slate-950/60 p-3 rounded-xl space-y-2 text-xs">
-            <div className="flex justify-between text-slate-400">
+          <div className="bg-slate-50 p-3 rounded-xl space-y-2 text-xs border border-slate-100">
+            <div className="flex justify-between text-slate-500 font-medium">
               <span>Subtotal</span>
-              <span>{formatIDR(subtotal)}</span>
+              <span className="text-slate-800 font-semibold">{formatIDR(subtotal)}</span>
             </div>
             {discount > 0 && (
-              <div className="flex justify-between text-amber-400">
+              <div className="flex justify-between text-amber-600 font-semibold">
                 <span>Diskon ({discount}%)</span>
                 <span>-{formatIDR(discountAmount)}</span>
               </div>
             )}
-            <div className="flex justify-between text-slate-400">
+            <div className="flex justify-between text-slate-500 font-medium">
               <span>Pajak (10%)</span>
-              <span>{formatIDR(taxAmount)}</span>
+              <span className="text-slate-800 font-semibold">{formatIDR(taxAmount)}</span>
             </div>
-            <div className="flex justify-between text-white font-bold text-sm border-t border-slate-800/60 pt-2">
+            <div className="flex justify-between text-slate-900 font-bold text-sm border-t border-slate-200 pt-2">
               <span>Total</span>
-              <span className="text-emerald-450">{formatIDR(total)}</span>
+              <span className="text-slate-900 font-extrabold text-base">{formatIDR(total)}</span>
             </div>
           </div>
 
           <button
             onClick={() => setIsPaymentOpen(true)}
             disabled={cart.length === 0}
-            className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-bold py-3 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs"
+            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3.5 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all text-xs shadow-md shadow-slate-900/10 active:scale-[0.99]"
           >
             Proses Pembayaran
           </button>

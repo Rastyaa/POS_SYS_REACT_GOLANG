@@ -46,7 +46,7 @@ export const usePosStore = create((set, get) => ({
       cost: Number(product.cost),
       stock: Number(product.stock),
       category: product.category,
-      image: product.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=60'
+      image: product.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=85'
     }
 
     try {

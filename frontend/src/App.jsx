@@ -45,39 +45,39 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans relative overflow-hidden text-slate-900">
       {/* Decorative gradient glowing spheres */}
-      <div className="absolute top-[-10%] right-[-10%] w-[400px] h-[400px] rounded-full bg-emerald-500/5 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] rounded-full bg-blue-600/5 blur-[120px] pointer-events-none" />
+      <div className="absolute top-[-10%] right-[-10%] w-[400px] h-[400px] rounded-full bg-slate-200/50 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[400px] h-[400px] rounded-full bg-slate-200/50 blur-[120px] pointer-events-none" />
 
       {/* Main Header */}
-      <header className="sticky top-0 z-40 bg-slate-900/60 backdrop-blur-md border-b border-slate-800/80 px-6 py-4 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
+          <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shadow-sm">
             <Coffee className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-md font-bold text-white tracking-tight">RestoPOS</h1>
-            <p className="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">System Kasir Modern</p>
+            <h1 className="text-sm font-bold text-slate-900 tracking-tight">RestoPOS</h1>
+            <p className="text-[10px] text-slate-500 font-bold tracking-wider uppercase">System Kasir Modern</p>
           </div>
         </div>
 
         {/* User Badge / Profile & Logout */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2.5 bg-slate-950/80 border border-slate-850 px-3 py-1.5 rounded-xl">
-            <div className="w-7 h-7 rounded-lg bg-slate-800 text-slate-350 flex items-center justify-center">
+          <div className="flex items-center gap-2.5 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-xl">
+            <div className="w-7 h-7 rounded-lg bg-white text-slate-700 flex items-center justify-center border border-slate-200">
               <User className="w-4 h-4" />
             </div>
             <div className="text-left leading-tight hidden sm:block">
-              <p className="text-xs font-bold text-slate-200">{user.username}</p>
-              <p className="text-[9px] text-emerald-400 font-medium">{user.role}</p>
+              <p className="text-xs font-bold text-slate-800">{user.username}</p>
+              <p className="text-[9px] text-slate-500 font-bold">{user.role}</p>
             </div>
           </div>
 
           <button
             onClick={logout}
             title="Keluar"
-            className="p-2 bg-slate-950/80 border border-slate-850 text-slate-400 hover:text-red-400 rounded-xl transition-all hover:border-red-500/20"
+            className="p-2 bg-white border border-slate-200 text-slate-500 hover:text-red-600 rounded-xl shadow-sm transition-all hover:border-red-200 hover:bg-red-50/50"
           >
             <LogOut className="w-4.5 h-4.5" />
           </button>
@@ -89,13 +89,13 @@ function App() {
         
         {/* Navigation Sidebar (Only shown for Administrator) */}
         {user.role === 'Administrator' && (
-          <nav className="flex flex-row md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-2 md:pb-0 w-full md:w-[220px] md:shrink-0 self-start">
+          <nav className="flex flex-row md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-2 md:pb-0 w-full md:w-[200px] md:shrink-0 self-start">
             <button
               onClick={() => setActiveTab('dashboard')}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all ${
                 activeTab === 'dashboard'
-                  ? 'bg-slate-900 border border-slate-850 text-emerald-400'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-slate-900 border border-slate-950 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'
               }`}
             >
               <LayoutDashboard className="w-4 h-4" />
@@ -106,8 +106,8 @@ function App() {
               onClick={() => setActiveTab('order')}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all ${
                 activeTab === 'order'
-                  ? 'bg-slate-900 border border-slate-850 text-emerald-400'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-slate-900 border border-slate-950 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'
               }`}
             >
               <ShoppingCart className="w-4 h-4" />
@@ -118,8 +118,8 @@ function App() {
               onClick={() => setActiveTab('menu')}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all ${
                 activeTab === 'menu'
-                  ? 'bg-slate-900 border border-slate-850 text-emerald-400'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-slate-900 border border-slate-950 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'
               }`}
             >
               <Database className="w-4 h-4" />
@@ -130,8 +130,8 @@ function App() {
               onClick={() => setActiveTab('reports')}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all ${
                 activeTab === 'reports'
-                  ? 'bg-slate-900 border border-slate-850 text-emerald-400'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-slate-900 border border-slate-950 text-white shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200/50'
               }`}
             >
               <FileBarChart2 className="w-4 h-4" />
@@ -141,7 +141,7 @@ function App() {
         )}
 
         {/* View Contents Pane (Takes full width for Cashier since sidebar is hidden) */}
-        <main className="flex-1 min-w-0 bg-slate-900/10 border border-slate-850/50 p-4 md:p-6 rounded-3xl backdrop-blur-sm">
+        <main className="flex-1 min-w-0 bg-white border border-slate-200/80 p-4 md:p-6 rounded-3xl shadow-sm">
           {renderView()}
         </main>
       </div>
