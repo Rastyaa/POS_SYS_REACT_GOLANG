@@ -4,21 +4,61 @@ import { getLocalDb } from '../supabase'
 
 const API_BASE = 'http://localhost:8080/api'
 
+// Initialize Axios Authorization header from localStorage on startup
+const initialToken = localStorage.getItem('pos_token')
+if (initialToken) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${initialToken}`
+}
+
+// Initialize Dark/Light theme on startup
+const initialTheme = localStorage.getItem('pos_theme') || 'light'
+if (initialTheme === 'dark') {
+  document.documentElement.classList.add('dark')
+} else {
+  document.documentElement.classList.remove('dark')
+}
+
 export const usePosStore = create((set, get) => ({
-  // Authentication
-  user: localStorage.getItem('pos_user') ? JSON.parse(localStorage.getItem('pos_user')) : null,
-  login: (username, password) => {
-    if ((username === 'admin' && password === 'admin') || (username === 'cashier' && password === 'cashier')) {
-      const userData = { username, role: username === 'admin' ? 'Administrator' : 'Cashier' }
-      localStorage.setItem('pos_user', JSON.stringify(userData))
-      set({ user: userData })
-      return true
+  // Theme state
+  theme: initialTheme,
+  toggleTheme: () => {
+    const next = get().theme === 'light' ? 'dark' : 'light'
+    localStorage.setItem('pos_theme', next)
+    if (next === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
     }
-    return false
+    set({ theme: next })
   },
+
+  // Authentication
+  user: (initialToken && localStorage.getItem('pos_user')) ? JSON.parse(localStorage.getItem('pos_user')) : null,
+  token: initialToken || null,
+  
+  login: async (username, password) => {
+    try {
+      const res = await axios.post(`${API_BASE}/auth/login`, { username, password })
+      if (res.data && res.data.success) {
+        const { token, user } = res.data.data
+        localStorage.setItem('pos_token', token)
+        localStorage.setItem('pos_user', JSON.stringify(user))
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+        set({ token, user })
+        return true
+      }
+      return false
+    } catch (err) {
+      console.error('Login error:', err.response?.data?.message || err.message)
+      throw new Error(err.response?.data?.message || 'Gagal terhubung ke server login')
+    }
+  },
+  
   logout: () => {
+    localStorage.removeItem('pos_token')
     localStorage.removeItem('pos_user')
-    set({ user: null })
+    delete axios.defaults.headers.common['Authorization']
+    set({ user: null, token: null, products: [], salesHistory: [], cart: [], discount: 0 })
   },
 
   // Products/Catalog
@@ -29,7 +69,9 @@ export const usePosStore = create((set, get) => ({
     set({ isLoadingProducts: true })
     try {
       const res = await axios.get(`${API_BASE}/products`)
-      set({ products: res.data || [] })
+      // Unwrap response from { success, message, data }
+      const productsData = res.data.success ? res.data.data : res.data
+      set({ products: productsData || [] })
     } catch (err) {
       console.warn('Gagal terhubung ke Golang API, menggunakan Local Storage:', err.message)
       set({ products: getLocalDb.getProducts() })
@@ -51,13 +93,15 @@ export const usePosStore = create((set, get) => ({
 
     try {
       const res = await axios.post(`${API_BASE}/products`, newProduct)
-      set({ products: [...get().products, res.data] })
+      const addedProduct = res.data.success ? res.data.data : res.data
+      set({ products: [...get().products, addedProduct] })
     } catch (err) {
       console.warn('Gagal kirim produk ke Golang API, menyimpan secara lokal:', err.message)
       const localProduct = { ...newProduct, id: Date.now().toString() }
       const updated = [...get().products, localProduct]
       getLocalDb.saveProducts(updated)
       set({ products: updated })
+      throw err
     }
   },
 
@@ -83,6 +127,7 @@ export const usePosStore = create((set, get) => ({
       const updated = get().products.map((p) => (p.id === id ? { ...p, ...cleanedFields } : p))
       getLocalDb.saveProducts(updated)
       set({ products: updated })
+      throw err
     }
   },
 
@@ -95,6 +140,7 @@ export const usePosStore = create((set, get) => ({
       const updated = get().products.filter((p) => p.id !== id)
       getLocalDb.saveProducts(updated)
       set({ products: updated })
+      throw err
     }
   },
 
@@ -150,7 +196,8 @@ export const usePosStore = create((set, get) => ({
     set({ isLoadingSales: true })
     try {
       const res = await axios.get(`${API_BASE}/sales`)
-      set({ salesHistory: res.data || [] })
+      const salesData = res.data.success ? res.data.data : res.data
+      set({ salesHistory: salesData || [] })
     } catch (err) {
       console.warn('Gagal memuat history dari Golang API, menggunakan lokal:', err.message)
       set({ salesHistory: getLocalDb.getSales() })
@@ -257,3 +304,17 @@ export const usePosStore = create((set, get) => ({
     }
   }
 }))
+
+// Add interceptor to automatically catch 401 errors and log the user out
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      localStorage.removeItem('pos_token')
+      localStorage.removeItem('pos_user')
+      delete axios.defaults.headers.common['Authorization']
+      usePosStore.setState({ user: null, token: null, products: [], salesHistory: [] })
+    }
+    return Promise.reject(error)
+  }
+)
