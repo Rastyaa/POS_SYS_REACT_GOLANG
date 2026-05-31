@@ -1,5 +1,8 @@
 import { create } from 'zustand'
-import { getLocalDb, supabase, isSupabaseConfigured } from '../supabase'
+import axios from 'axios'
+import { getLocalDb } from '../supabase'
+
+const API_BASE = 'http://localhost:8080/api'
 
 export const usePosStore = create((set, get) => ({
   // Authentication
@@ -24,22 +27,14 @@ export const usePosStore = create((set, get) => ({
   
   fetchProducts: async () => {
     set({ isLoadingProducts: true })
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .order('name', { ascending: true })
-        if (error) throw error
-        set({ products: data || [] })
-      } catch (err) {
-        console.error('Gagal mengambil produk dari Supabase, menggunakan lokal DB:', err)
-        set({ products: getLocalDb.getProducts() })
-      } finally {
-        set({ isLoadingProducts: false })
-      }
-    } else {
-      set({ products: getLocalDb.getProducts(), isLoadingProducts: false })
+    try {
+      const res = await axios.get(`${API_BASE}/products`)
+      set({ products: res.data || [] })
+    } catch (err) {
+      console.warn('Gagal terhubung ke Golang API, menggunakan Local Storage:', err.message)
+      set({ products: getLocalDb.getProducts() })
+    } finally {
+      set({ isLoadingProducts: false })
     }
   },
 
@@ -54,20 +49,11 @@ export const usePosStore = create((set, get) => ({
       image: product.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=60'
     }
 
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .insert([newProduct])
-          .select()
-        if (error) throw error
-        if (data) {
-          set({ products: [...get().products, data[0]] })
-        }
-      } catch (err) {
-        console.error('Gagal tambah produk ke Supabase:', err)
-      }
-    } else {
+    try {
+      const res = await axios.post(`${API_BASE}/products`, newProduct)
+      set({ products: [...get().products, res.data] })
+    } catch (err) {
+      console.warn('Gagal kirim produk ke Golang API, menyimpan secara lokal:', err.message)
       const localProduct = { ...newProduct, id: Date.now().toString() }
       const updated = [...get().products, localProduct]
       getLocalDb.saveProducts(updated)
@@ -85,23 +71,15 @@ export const usePosStore = create((set, get) => ({
       category: updatedFields.category,
       image: updatedFields.image
     }
-    // Remove undefined keys
     Object.keys(cleanedFields).forEach(key => cleanedFields[key] === undefined && delete cleanedFields[key])
 
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { error } = await supabase
-          .from('products')
-          .update(cleanedFields)
-          .eq('id', id)
-        if (error) throw error
-        set({
-          products: get().products.map((p) => (p.id === id ? { ...p, ...cleanedFields } : p))
-        })
-      } catch (err) {
-        console.error('Gagal update produk ke Supabase:', err)
-      }
-    } else {
+    try {
+      await axios.put(`${API_BASE}/products/${id}`, cleanedFields)
+      set({
+        products: get().products.map((p) => (p.id === id ? { ...p, ...cleanedFields } : p))
+      })
+    } catch (err) {
+      console.warn('Gagal update produk di Golang API, menggunakan lokal:', err.message)
       const updated = get().products.map((p) => (p.id === id ? { ...p, ...cleanedFields } : p))
       getLocalDb.saveProducts(updated)
       set({ products: updated })
@@ -109,18 +87,11 @@ export const usePosStore = create((set, get) => ({
   },
 
   deleteProduct: async (id) => {
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { error } = await supabase
-          .from('products')
-          .delete()
-          .eq('id', id)
-        if (error) throw error
-        set({ products: get().products.filter((p) => p.id !== id) })
-      } catch (err) {
-        console.error('Gagal hapus produk dari Supabase:', err)
-      }
-    } else {
+    try {
+      await axios.delete(`${API_BASE}/products/${id}`)
+      set({ products: get().products.filter((p) => p.id !== id) })
+    } catch (err) {
+      console.warn('Gagal hapus produk di Golang API, menghapus lokal:', err.message)
       const updated = get().products.filter((p) => p.id !== id)
       getLocalDb.saveProducts(updated)
       set({ products: updated })
@@ -177,45 +148,14 @@ export const usePosStore = create((set, get) => ({
 
   fetchSalesHistory: async () => {
     set({ isLoadingSales: true })
-    if (isSupabaseConfigured && supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('sales')
-          .select('*, sale_items(*)')
-          .order('timestamp', { ascending: false })
-        if (error) throw error
-        
-        // Map table format to match state
-        const mappedSales = (data || []).map((sale) => ({
-          id: sale.id,
-          timestamp: sale.timestamp,
-          items: (sale.sale_items || []).map((item) => ({
-            id: item.product_id,
-            name: item.name,
-            price: item.price,
-            quantity: item.quantity,
-            subtotal: item.subtotal
-          })),
-          subtotal: Number(sale.subtotal),
-          discountPercent: Number(sale.discount_percent),
-          discountAmount: Number(sale.discount_amount),
-          taxAmount: Number(sale.tax_amount),
-          total: Number(sale.total),
-          profit: Number(sale.profit),
-          paymentMethod: sale.payment_method,
-          cashReceived: Number(sale.cash_received),
-          change: Number(sale.change),
-          cashier: sale.cashier
-        }))
-        set({ salesHistory: mappedSales })
-      } catch (err) {
-        console.error('Gagal mengambil laporan penjualan dari Supabase:', err)
-        set({ salesHistory: getLocalDb.getSales() })
-      } finally {
-        set({ isLoadingSales: false })
-      }
-    } else {
-      set({ salesHistory: getLocalDb.getSales(), isLoadingSales: false })
+    try {
+      const res = await axios.get(`${API_BASE}/sales`)
+      set({ salesHistory: res.data || [] })
+    } catch (err) {
+      console.warn('Gagal memuat history dari Golang API, menggunakan lokal:', err.message)
+      set({ salesHistory: getLocalDb.getSales() })
+    } finally {
+      set({ isLoadingSales: false })
     }
   },
 
@@ -231,33 +171,31 @@ export const usePosStore = create((set, get) => ({
     const profit = total - taxAmount - totalCost
     const change = paymentMethod === 'Cash' ? Math.max(0, cashAmount - total) : 0
 
-    // Prepare transaction payload
     const trxId = `TRX-${Date.now().toString().slice(-6)}`
     const timestamp = new Date().toISOString()
 
-    const newSaleState = {
+    const newSale = {
       id: trxId,
       timestamp,
       items: cart.map((item) => ({
-        id: item.product.id,
+        product_id: item.product.id,
         name: item.product.name,
         price: item.product.price,
         quantity: item.quantity,
         subtotal: item.product.price * item.quantity
       })),
       subtotal,
-      discountPercent: discount,
-      discountAmount,
-      taxAmount,
+      discount_percent: discount,
+      discount_amount: discountAmount,
+      tax_amount: taxAmount,
       total,
       profit,
-      paymentMethod,
-      cashReceived: paymentMethod === 'Cash' ? cashAmount : total,
+      payment_method: paymentMethod,
+      cash_received: paymentMethod === 'Cash' ? cashAmount : total,
       change,
       cashier: get().user?.username || 'Cashier'
     }
 
-    // Deduct stock locally
     const updatedProducts = products.map((p) => {
       const cartItem = cart.find((item) => item.product.id === p.id)
       if (cartItem) {
@@ -266,65 +204,56 @@ export const usePosStore = create((set, get) => ({
       return p
     })
 
-    if (isSupabaseConfigured && supabase) {
-      try {
-        // 1. Insert header
-        const { error: saleErr } = await supabase.from('sales').insert([{
-          id: trxId,
-          cashier: newSaleState.cashier,
-          subtotal,
-          discount_percent: discount,
-          discount_amount: discountAmount,
-          tax_amount: taxAmount,
-          total,
-          profit,
-          payment_method: paymentMethod,
-          cash_received: newSaleState.cashReceived,
-          change,
-          timestamp
-        }])
-        if (saleErr) throw saleErr
-
-        // 2. Insert items
-        const saleItemsPayload = cart.map((item) => ({
-          sale_id: trxId,
-          product_id: item.product.id,
-          name: item.product.name,
-          price: item.product.price,
-          quantity: item.quantity,
-          subtotal: item.product.price * item.quantity
-        }))
-        const { error: itemsErr } = await supabase.from('sale_items').insert(saleItemsPayload)
-        if (itemsErr) throw itemsErr
-
-        // 3. Update stock of products in DB
-        for (const item of cart) {
-          const newStock = Math.max(0, item.product.stock - item.quantity)
-          await supabase.from('products').update({ stock: newStock }).eq('id', item.product.id)
-        }
-
-        set({
-          products: updatedProducts,
-          salesHistory: [newSaleState, ...get().salesHistory],
-          cart: [],
-          discount: 0
-        })
-      } catch (err) {
-        console.error('Gagal checkout ke Supabase:', err)
-        alert('Gagal mengirim transaksi ke Supabase!')
-      }
-    } else {
-      // Local Database Fallback
-      getLocalDb.saveProducts(updatedProducts)
-      getLocalDb.saveSale(newSaleState)
+    try {
+      await axios.post(`${API_BASE}/sales`, newSale)
       set({
         products: updatedProducts,
-        salesHistory: [newSaleState, ...get().salesHistory],
+        salesHistory: [
+          {
+            ...newSale,
+            discountPercent: discount,
+            discountAmount,
+            taxAmount,
+            cashReceived: newSale.cash_received,
+            paymentMethod: newSale.payment_method,
+            items: newSale.items.map(i => ({ ...i, id: i.product_id }))
+          },
+          ...get().salesHistory
+        ],
+        cart: [],
+        discount: 0
+      })
+    } catch (err) {
+      console.warn('Gagal checkout ke Golang API, menyimpan secara lokal:', err.message)
+      getLocalDb.saveProducts(updatedProducts)
+      
+      const localSale = {
+        ...newSale,
+        discountPercent: discount,
+        discountAmount,
+        taxAmount,
+        cashReceived: newSale.cash_received,
+        paymentMethod: newSale.payment_method,
+        items: newSale.items.map(i => ({ ...i, id: i.product_id }))
+      }
+      getLocalDb.saveSale(localSale)
+
+      set({
+        products: updatedProducts,
+        salesHistory: [localSale, ...get().salesHistory],
         cart: [],
         discount: 0
       })
     }
 
-    return newSaleState
+    return {
+      ...newSale,
+      discountPercent: discount,
+      discountAmount,
+      taxAmount,
+      cashReceived: newSale.cash_received,
+      paymentMethod: newSale.payment_method,
+      items: newSale.items.map(i => ({ ...i, id: i.product_id }))
+    }
   }
 }))
