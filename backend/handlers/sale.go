@@ -6,7 +6,9 @@ import (
 	"net/http"
 
 	"pos-backend/config"
+	"pos-backend/middleware"
 	"pos-backend/models"
+	"pos-backend/utils"
 )
 
 // SalesHandler handles GET /api/sales and POST /api/sales
@@ -16,7 +18,7 @@ func SalesHandler(w http.ResponseWriter, r *http.Request) {
 		salesQuery := `SELECT id, cashier, subtotal, discount_percent, discount_amount, tax_amount, total, profit, payment_method, cash_received, change, timestamp FROM sales ORDER BY timestamp DESC`
 		sRows, err := config.DB.Query(salesQuery)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal mengambil riwayat transaksi", nil)
 			return
 		}
 		defer sRows.Close()
@@ -25,7 +27,7 @@ func SalesHandler(w http.ResponseWriter, r *http.Request) {
 		for sRows.Next() {
 			var s models.Sale
 			if err := sRows.Scan(&s.ID, &s.Cashier, &s.Subtotal, &s.DiscountPercent, &s.DiscountAmount, &s.TaxAmount, &s.Total, &s.Profit, &s.PaymentMethod, &s.CashReceived, &s.Change, &s.Timestamp); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal memindai riwayat transaksi", nil)
 				return
 			}
 
@@ -47,20 +49,24 @@ func SalesHandler(w http.ResponseWriter, r *http.Request) {
 			sales = append(sales, s)
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(sales)
+		utils.WriteJSON(w, http.StatusOK, true, "Data transaksi berhasil diambil", sales)
 
 	case "POST":
 		var s models.Sale
 		if err := json.NewDecoder(r.Body).Decode(&s); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			utils.WriteJSON(w, http.StatusBadRequest, false, "Format JSON tidak valid", nil)
 			return
+		}
+
+		// Inject cashier username from JWT claims context
+		if username, ok := r.Context().Value(middleware.UsernameKey).(string); ok {
+			s.Cashier = username
 		}
 
 		// Use transaction to ensure database atomicity
 		tx, err := config.DB.Begin()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal memulai transaksi database", nil)
 			return
 		}
 		defer tx.Rollback()
@@ -70,7 +76,7 @@ func SalesHandler(w http.ResponseWriter, r *http.Request) {
                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
 		_, err = tx.Exec(saleInsert, s.ID, s.Cashier, s.Subtotal, s.DiscountPercent, s.DiscountAmount, s.TaxAmount, s.Total, s.Profit, s.PaymentMethod, s.CashReceived, s.Change, s.Timestamp)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Gagal insert header penjualan: %v", err), http.StatusInternalServerError)
+			utils.WriteJSON(w, http.StatusInternalServerError, false, fmt.Sprintf("Gagal menyimpan detail penjualan: %v", err), nil)
 			return
 		}
 
@@ -80,7 +86,7 @@ func SalesHandler(w http.ResponseWriter, r *http.Request) {
 			itemInsert := `INSERT INTO sale_items (sale_id, product_id, name, price, quantity, subtotal) VALUES ($1, $2, $3, $4, $5, $6)`
 			_, err = tx.Exec(itemInsert, s.ID, item.ProductID, item.Name, item.Price, item.Quantity, item.Subtotal)
 			if err != nil {
-				http.Error(w, fmt.Sprintf("Gagal insert item: %v", err), http.StatusInternalServerError)
+				utils.WriteJSON(w, http.StatusInternalServerError, false, fmt.Sprintf("Gagal menyimpan item penjualan: %v", err), nil)
 				return
 			}
 
@@ -88,22 +94,20 @@ func SalesHandler(w http.ResponseWriter, r *http.Request) {
 			stockUpdate := `UPDATE products SET stock = GREATEST(0, stock - $1) WHERE id = $2`
 			_, err = tx.Exec(stockUpdate, item.Quantity, item.ProductID)
 			if err != nil {
-				http.Error(w, fmt.Sprintf("Gagal update stock produk: %v", err), http.StatusInternalServerError)
+				utils.WriteJSON(w, http.StatusInternalServerError, false, fmt.Sprintf("Gagal memperbarui stok barang: %v", err), nil)
 				return
 			}
 		}
 
 		// Commit transaction
 		if err := tx.Commit(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal mengesahkan transaksi database", nil)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(s)
+		utils.WriteJSON(w, http.StatusCreated, true, "Transaksi berhasil diproses!", s)
 
 	default:
-		http.Error(w, "Metode HTTP tidak didukung", http.StatusMethodNotAllowed)
+		utils.WriteJSON(w, http.StatusMethodNotAllowed, false, "Metode HTTP tidak didukung", nil)
 	}
 }
