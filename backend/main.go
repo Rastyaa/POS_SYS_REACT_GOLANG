@@ -19,9 +19,31 @@ func main() {
 
 	// 3. Configure HTTP routing
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/products", handlers.ProductsHandler)
-	mux.HandleFunc("/api/products/", handlers.ProductDetailHandler)
-	mux.HandleFunc("/api/sales", handlers.SalesHandler)
+	
+	// Public Routes
+	mux.HandleFunc("/api/auth/login", handlers.LoginHandler)
+
+	// Protected Routes (Require valid JWT)
+	mux.Handle("/api/products", middleware.AuthProtect(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" {
+			// POST /api/products requires Administrator role
+			middleware.RequireRole("Administrator", http.HandlerFunc(handlers.ProductsHandler)).ServeHTTP(w, r)
+		} else {
+			// GET /api/products is accessible by Cashier & Admin
+			handlers.ProductsHandler(w, r)
+		}
+	})))
+
+	mux.Handle("/api/products/", middleware.AuthProtect(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "PUT" || r.Method == "DELETE" {
+			// PUT/DELETE /api/products/{id} requires Administrator role
+			middleware.RequireRole("Administrator", http.HandlerFunc(handlers.ProductDetailHandler)).ServeHTTP(w, r)
+		} else {
+			handlers.ProductDetailHandler(w, r)
+		}
+	})))
+
+	mux.Handle("/api/sales", middleware.AuthProtect(http.HandlerFunc(handlers.SalesHandler)))
 
 	// Apply CORS middleware
 	handler := middleware.CORS(mux)
