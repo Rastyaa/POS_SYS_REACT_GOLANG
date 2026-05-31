@@ -7,6 +7,7 @@ import (
 
 	"pos-backend/config"
 	"pos-backend/models"
+	"pos-backend/utils"
 )
 
 // ProductsHandler handles GET /api/products and POST /api/products
@@ -15,7 +16,7 @@ func ProductsHandler(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		rows, err := config.DB.Query("SELECT id, sku, name, price, cost, stock, category, COALESCE(image, ''), created_at FROM products ORDER BY name ASC")
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal mengambil data produk", nil)
 			return
 		}
 		defer rows.Close()
@@ -24,19 +25,24 @@ func ProductsHandler(w http.ResponseWriter, r *http.Request) {
 		for rows.Next() {
 			var p models.Product
 			if err := rows.Scan(&p.ID, &p.SKU, &p.Name, &p.Price, &p.Cost, &p.Stock, &p.Category, &p.Image, &p.CreatedAt); err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal memindai data produk", nil)
 				return
 			}
 			products = append(products, p)
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(products)
+		utils.WriteJSON(w, http.StatusOK, true, "Data produk berhasil diambil", products)
 
 	case "POST":
 		var p models.Product
 		if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			utils.WriteJSON(w, http.StatusBadRequest, false, "Format JSON tidak valid", nil)
+			return
+		}
+
+		// Validate payload
+		if err := utils.ValidateStruct(&p); err != nil {
+			utils.WriteJSON(w, http.StatusBadRequest, false, "Payload produk tidak valid: "+err.Error(), nil)
 			return
 		}
 
@@ -45,16 +51,14 @@ func ProductsHandler(w http.ResponseWriter, r *http.Request) {
                   RETURNING id, created_at`
 		err := config.DB.QueryRow(query, p.SKU, p.Name, p.Price, p.Cost, p.Stock, p.Category, p.Image).Scan(&p.ID, &p.CreatedAt)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal menyimpan produk baru: "+err.Error(), nil)
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(p)
+		utils.WriteJSON(w, http.StatusCreated, true, "Produk berhasil ditambahkan!", p)
 
 	default:
-		http.Error(w, "Metode HTTP tidak didukung", http.StatusMethodNotAllowed)
+		utils.WriteJSON(w, http.StatusMethodNotAllowed, false, "Metode HTTP tidak didukung", nil)
 	}
 }
 
@@ -62,7 +66,7 @@ func ProductsHandler(w http.ResponseWriter, r *http.Request) {
 func ProductDetailHandler(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(r.URL.Path, "/")
 	if len(parts) < 4 || parts[3] == "" {
-		http.Error(w, "ID produk dibutuhkan", http.StatusBadRequest)
+		utils.WriteJSON(w, http.StatusBadRequest, false, "ID produk dibutuhkan", nil)
 		return
 	}
 	id := parts[3]
@@ -71,32 +75,48 @@ func ProductDetailHandler(w http.ResponseWriter, r *http.Request) {
 	case "PUT":
 		var p models.Product
 		if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			utils.WriteJSON(w, http.StatusBadRequest, false, "Format JSON tidak valid", nil)
+			return
+		}
+
+		// Validate payload
+		if err := utils.ValidateStruct(&p); err != nil {
+			utils.WriteJSON(w, http.StatusBadRequest, false, "Payload produk tidak valid: "+err.Error(), nil)
 			return
 		}
 
 		query := `UPDATE products SET name = $1, sku = $2, price = $3, cost = $4, stock = $5, category = $6, image = $7 WHERE id = $8`
-		_, err := config.DB.Exec(query, p.Name, p.SKU, p.Price, p.Cost, p.Stock, p.Category, p.Image, id)
+		result, err := config.DB.Exec(query, p.Name, p.SKU, p.Price, p.Cost, p.Stock, p.Category, p.Image, id)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal mengupdate produk: "+err.Error(), nil)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"status": "updated"})
+
+		rowsAffected, _ := result.RowsAffected()
+		if rowsAffected == 0 {
+			utils.WriteJSON(w, http.StatusNotFound, false, "Produk tidak ditemukan", nil)
+			return
+		}
+
+		utils.WriteJSON(w, http.StatusOK, true, "Produk berhasil diperbarui!", p)
 
 	case "DELETE":
 		query := `DELETE FROM products WHERE id = $1`
-		_, err := config.DB.Exec(query, id)
+		result, err := config.DB.Exec(query, id)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal menghapus produk: "+err.Error(), nil)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(map[string]string{"status": "deleted"})
+
+		rowsAffected, _ := result.RowsAffected()
+		if rowsAffected == 0 {
+			utils.WriteJSON(w, http.StatusNotFound, false, "Produk tidak ditemukan", nil)
+			return
+		}
+
+		utils.WriteJSON(w, http.StatusOK, true, "Produk berhasil dihapus!", map[string]string{"id": id})
 
 	default:
-		http.Error(w, "Metode HTTP tidak didukung", http.StatusMethodNotAllowed)
+		utils.WriteJSON(w, http.StatusMethodNotAllowed, false, "Metode HTTP tidak didukung", nil)
 	}
 }
