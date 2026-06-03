@@ -67,14 +67,19 @@ export const usePosStore = create((set, get) => ({
   
   fetchProducts: async () => {
     set({ isLoadingProducts: true })
+    const defaultImg = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=85'
     try {
       const res = await axios.get(`${API_BASE}/products`)
-      // Unwrap response from { success, message, data }
-      const productsData = res.data.success ? res.data.data : res.data
-      set({ products: productsData || [] })
+      let productsData = res.data?.success ? res.data.data : res.data
+      if (!Array.isArray(productsData)) productsData = []
+      const withPhotos = productsData.map(p => (p ? { ...p, image: p.image || defaultImg } : p))
+      set({ products: withPhotos })
     } catch (err) {
       console.warn('Gagal terhubung ke Golang API, menggunakan Local Storage:', err.message)
-      set({ products: getLocalDb.getProducts() })
+      let localProducts = getLocalDb.getProducts()
+      if (!Array.isArray(localProducts)) localProducts = []
+      const withPhotos = localProducts.map(p => (p ? { ...p, image: p.image || defaultImg } : p))
+      set({ products: withPhotos })
     } finally {
       set({ isLoadingProducts: false })
     }
@@ -106,6 +111,7 @@ export const usePosStore = create((set, get) => ({
   },
 
   updateProduct: async (id, updatedFields) => {
+    const defaultImg = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=85'
     const cleanedFields = {
       name: updatedFields.name,
       sku: updatedFields.sku,
@@ -113,7 +119,7 @@ export const usePosStore = create((set, get) => ({
       cost: updatedFields.cost !== undefined ? Number(updatedFields.cost) : undefined,
       stock: updatedFields.stock !== undefined ? Number(updatedFields.stock) : undefined,
       category: updatedFields.category,
-      image: updatedFields.image
+      image: updatedFields.image || defaultImg
     }
     Object.keys(cleanedFields).forEach(key => cleanedFields[key] === undefined && delete cleanedFields[key])
 
