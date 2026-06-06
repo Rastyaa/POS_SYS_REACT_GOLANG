@@ -1,5 +1,6 @@
 import { usePosStore } from '../store/posStore'
 import { DollarSign, ShoppingBag, AlertTriangle, TrendingUp, RefreshCw } from 'lucide-react'
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts'
 
 export default function DashboardView() {
   const { salesHistory, products } = usePosStore()
@@ -19,6 +20,21 @@ export default function DashboardView() {
     acc[sale.paymentMethod] = (acc[sale.paymentMethod] || 0) + sale.total
     return acc
   }, {})
+
+  const paymentData = Object.keys(salesByPayment).map(key => ({
+    name: key,
+    value: salesByPayment[key]
+  }))
+  const COLORS = ['#34d399', '#60a5fa', '#818cf8']; // Emerald, Blue, Indigo
+
+  // Trend Data (Group by Day)
+  const trendMap = salesHistory.reduce((acc, sale) => {
+    const date = new Date(sale.timestamp).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })
+    acc[date] = (acc[date] || 0) + sale.total
+    return acc
+  }, {})
+  const trendData = Object.keys(trendMap).map(date => ({ date, value: trendMap[date] })).reverse().slice(0, 7).reverse() // Last 7 days
+
 
   return (
     <div className="space-y-8 text-slate-800 dark:text-slate-100 transition-colors animate-fadeIn">
@@ -88,66 +104,66 @@ export default function DashboardView() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
-        {/* Recent Transactions & Payment Channels (Takes up 2 columns now) */}
+        {/* Recent Transactions & Payment Channels */}
         <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 p-6 rounded-3xl space-y-6 lg:col-span-2 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] transition-colors">
           <div className="flex justify-between items-center pb-4 border-b border-slate-200/60 dark:border-slate-800/60">
             <h4 className="font-extrabold text-base text-slate-900 dark:text-slate-100">Analisis Pendapatan & Metode</h4>
-            <div className="text-xs font-semibold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">Hari Ini</div>
+            <div className="text-xs font-semibold text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full">Keseluruhan</div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2">
-            {/* Payment Metrics */}
-            <div className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-2 h-[250px]">
+            {/* Payment Metrics (Recharts Pie Chart) */}
+            <div className="space-y-2 h-full flex flex-col">
               <h5 className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Distribusi Pembayaran</h5>
-              <div className="space-y-4">
-                {['Cash', 'Card', 'QRIS'].map((method) => {
-                  const amount = salesByPayment[method] || 0
-                  const pct = totalRevenue > 0 ? (amount / totalRevenue) * 100 : 0
-                  const colorClass = method === 'Cash' ? 'from-emerald-400 to-emerald-500' : method === 'Card' ? 'from-blue-400 to-blue-500' : 'from-indigo-400 to-purple-500'
-                  
-                  return (
-                    <div key={method} className="space-y-1.5 group">
-                      <div className="flex justify-between text-sm font-semibold">
-                        <span className="text-slate-700 dark:text-slate-300">{method}</span>
-                        <span className="text-slate-900 dark:text-white font-bold">{formatIDR(amount)} <span className="text-slate-400 text-xs ml-1">({Math.round(pct)}%)</span></span>
-                      </div>
-                      <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden shadow-inner">
-                        <div
-                          className={`h-full rounded-full bg-gradient-to-r ${colorClass} transition-all duration-1000 ease-out`}
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
+              <div className="flex-1 w-full relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={paymentData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                      stroke="none"
+                    >
+                      {paymentData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value) => formatIDR(value)}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                    />
+                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Recent History */}
-            <div className="space-y-4">
-              <h5 className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Transaksi Terbaru</h5>
-              <div className="space-y-3">
-                {salesHistory.slice(0, 3).map((s) => (
-                  <div key={s.id} className="group flex justify-between items-center bg-white dark:bg-slate-800/50 p-3 rounded-2xl border border-slate-100 dark:border-slate-700/50 shadow-sm hover:shadow-md transition-all">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs ${
-                          s.paymentMethod === 'Cash' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' :
-                          s.paymentMethod === 'Card' ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' :
-                          'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400'
-                        }`}>
-                        {s.paymentMethod === 'Cash' ? 'CS' : s.paymentMethod === 'Card' ? 'CC' : 'QR'}
-                      </div>
-                      <div>
-                        <p className="font-extrabold text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">{s.id}</p>
-                        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-bold">{new Date(s.timestamp).toLocaleTimeString('id-ID')}</p>
-                      </div>
-                    </div>
-                    <span className="font-black text-sm text-slate-900 dark:text-white">{formatIDR(s.total)}</span>
-                  </div>
-                ))}
-                {salesHistory.length === 0 && (
-                  <p className="text-slate-400 dark:text-slate-500 text-sm text-center py-8 font-semibold bg-slate-50 dark:bg-slate-800/30 rounded-2xl border border-dashed border-slate-200 dark:border-slate-700">Belum ada transaksi hari ini.</p>
-                )}
+            {/* Recent History or Line Chart */}
+            <div className="space-y-2 h-full flex flex-col">
+              <h5 className="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-widest">Tren Pendapatan Harian</h5>
+              <div className="flex-1 w-full relative">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={trendData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.2} />
+                    <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(value) => `Rp${value/1000}k`} />
+                    <Tooltip 
+                      formatter={(value) => formatIDR(value)}
+                      contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                    />
+                    <Area type="monotone" dataKey="value" stroke="#4f46e5" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </div>
           </div>

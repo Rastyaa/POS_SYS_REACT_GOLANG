@@ -30,39 +30,62 @@ export default function OrderView() {
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 text-slate-800 dark:text-slate-200 h-[calc(100vh-140px)]">
+      
+      {/* Categories Sidebar (Desktop) */}
+      <div className="hidden md:flex flex-col w-[150px] shrink-0 space-y-2 overflow-y-auto pb-4 scrollbar-hide">
+        <h3 className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1 px-1">Kategori Menu</h3>
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => setSelectedCategory(cat)}
+            className={`px-4 py-3 rounded-2xl text-xs font-bold text-left transition-all cursor-pointer border ${
+              selectedCategory === cat
+                ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white text-white dark:text-slate-900 shadow-md shadow-slate-900/10 dark:shadow-white/5 scale-[1.02]'
+                : 'bg-white/80 dark:bg-slate-900/80 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-400 dark:hover:border-slate-600 hover:bg-white dark:hover:bg-slate-800'
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
       {/* Product Catalog Column */}
       <div className="flex-1 flex flex-col space-y-4 min-w-0">
-        {/* Search & Categories */}
-        <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-2xl shadow-sm transition-colors">
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="absolute inset-y-0 left-3 flex items-center w-4 h-4 text-slate-400 my-auto" />
-            <input
-              type="text"
-              placeholder="Cari menu atau SKU..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl py-2 pl-9 pr-4 placeholder-slate-400 focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 focus:bg-white dark:focus:bg-slate-800 transition-all text-xs font-medium"
-            />
-          </div>
-          <div className="flex gap-1 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+        
+        {/* Mobile Categories & Search */}
+        <div className="flex flex-col gap-3">
+          {/* Mobile Categories (Horizontal Swipe) */}
+          <div className="md:hidden flex gap-2 overflow-x-auto w-full pb-1 scrollbar-hide snap-x">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                className={`snap-start shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer border ${
                   selectedCategory === cat
-                    ? 'bg-slate-900 dark:bg-white border border-slate-950 dark:border-white text-white dark:text-slate-900 shadow-sm'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-350 border border-transparent hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-slate-750'
+                    ? 'bg-slate-900 dark:bg-white border-slate-900 dark:border-white text-white dark:text-slate-900 shadow-sm'
+                    : 'bg-white dark:bg-slate-900 text-slate-650 dark:text-slate-350 border-slate-200/60 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
                 {cat}
               </button>
             ))}
           </div>
+
+          {/* Search */}
+          <div className="relative w-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 p-2 rounded-2xl shadow-sm transition-colors">
+            <Search className="absolute inset-y-0 left-5 flex items-center w-4 h-4 text-slate-400 my-auto" />
+            <input
+              type="text"
+              placeholder="Cari menu atau SKU..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 text-slate-800 dark:text-white rounded-xl py-2.5 pl-9 pr-4 placeholder-slate-400 focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 focus:bg-white dark:focus:bg-slate-800 transition-all text-xs font-bold"
+            />
+          </div>
         </div>
 
         {/* Product Grid */}
-        <div className="flex-1 overflow-y-auto pr-2 pb-4">
+        <div className="flex-1 overflow-y-auto pr-2 pb-4 scrollbar-hide">
           <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredProducts.map((p) => {
             const isOutOfStock = p.stock <= 0
@@ -80,9 +103,9 @@ export default function OrderView() {
                   isOutOfStock ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
-                <div className="aspect-[4/3] w-full bg-white dark:bg-slate-850 relative overflow-hidden shrink-0 border-b border-slate-100 dark:border-slate-800 p-2 flex items-center justify-center">
+                <div className="aspect-[4/3] w-full bg-white dark:bg-slate-800 relative overflow-hidden shrink-0 border-b border-slate-100 dark:border-slate-800 p-2 flex items-center justify-center">
                   {p.image ? (
-                    <img src={p.image} alt={p.name} className="w-full h-full object-contain group-hover:scale-105 transition-all duration-300 drop-shadow-sm" />
+                    <img src={p.image} alt={p.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x300?text=Image+Error' }} className="w-full h-full object-contain group-hover:scale-105 transition-all duration-300 drop-shadow-sm" />
                   ) : (
                     <div className="w-full h-full bg-slate-50 dark:bg-slate-800 rounded-lg flex items-center justify-center">
                       <span className="text-slate-350 dark:text-slate-500 text-xs font-medium">No Image</span>
@@ -148,7 +171,7 @@ export default function OrderView() {
             cart.map((item) => (
               <div key={item.product.id} className="bg-slate-50 dark:bg-slate-800/40 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800/80 flex gap-3 animate-slideIn">
                 <div className="flex-1 min-w-0">
-                  <h5 className="font-bold text-xs text-slate-850 dark:text-slate-200 truncate">{item.product.name}</h5>
+                  <h5 className="font-bold text-xs text-slate-800 dark:text-slate-200 truncate">{item.product.name}</h5>
                   <p className="text-[10px] text-slate-650 dark:text-slate-400 font-semibold">{formatIDR(item.product.price)}</p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -191,12 +214,12 @@ export default function OrderView() {
               max="100"
               value={discount || ''}
               onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-850 dark:text-white rounded-xl py-2 pl-9 pr-4 placeholder-slate-400 focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 focus:bg-white dark:focus:bg-slate-800 text-xs font-medium"
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-white rounded-xl py-2 pl-9 pr-4 placeholder-slate-400 focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 focus:bg-white dark:focus:bg-slate-800 text-xs font-medium"
             />
           </div>
 
           {/* Checkout Totals */}
-          <div className="bg-slate-50 dark:bg-slate-850/50 p-3 rounded-xl space-y-2 text-xs border border-slate-100 dark:border-slate-800">
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl space-y-2 text-xs border border-slate-100 dark:border-slate-800">
             <div className="flex justify-between text-slate-500 dark:text-slate-400 font-medium">
               <span>Subtotal</span>
               <span className="text-slate-800 dark:text-slate-200 font-semibold">{formatIDR(subtotal)}</span>

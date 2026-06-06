@@ -125,7 +125,7 @@ export default function MenuManagement() {
           <div key={p.id} className="group bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-white/40 dark:border-slate-700/40 hover:border-indigo-300/60 dark:hover:border-indigo-500/50 rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_15px_40px_rgb(0,0,0,0.08)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] dark:hover:shadow-[0_15px_40px_rgb(0,0,0,0.2)] hover:-translate-y-1 transition-all duration-300 flex flex-col relative">
             <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-800 relative overflow-hidden shrink-0 border-b border-white/20 dark:border-slate-800/50 p-2 flex items-center justify-center">
               {p.image ? (
-                <img src={p.image} alt={p.name} className="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform duration-500 ease-out" />
+                <img src={p.image} alt={p.name} onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x300?text=Image+Error' }} className="w-full h-full object-contain drop-shadow-md group-hover:scale-110 transition-transform duration-500 ease-out" />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-800/50 rounded-xl">
                   <Image className="w-8 h-8 mb-1 opacity-50" />

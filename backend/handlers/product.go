@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
 
@@ -42,7 +43,8 @@ func ProductsHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Validate payload
 		if err := utils.ValidateStruct(&p); err != nil {
-			utils.WriteJSON(w, http.StatusBadRequest, false, "Payload produk tidak valid: "+err.Error(), nil)
+			log.Printf("Validasi produk gagal: %v", err)
+			utils.WriteJSON(w, http.StatusBadRequest, false, "Payload produk tidak valid", nil)
 			return
 		}
 
@@ -51,7 +53,8 @@ func ProductsHandler(w http.ResponseWriter, r *http.Request) {
                   RETURNING id, created_at`
 		err := config.DB.QueryRow(query, p.SKU, p.Name, p.Price, p.Cost, p.Stock, p.Category, p.Image).Scan(&p.ID, &p.CreatedAt)
 		if err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal menyimpan produk baru: "+err.Error(), nil)
+			log.Printf("Gagal menyimpan produk: %v", err)
+			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal menyimpan produk baru", nil)
 			return
 		}
 
@@ -81,14 +84,16 @@ func ProductDetailHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Validate payload
 		if err := utils.ValidateStruct(&p); err != nil {
-			utils.WriteJSON(w, http.StatusBadRequest, false, "Payload produk tidak valid: "+err.Error(), nil)
+			log.Printf("Validasi produk gagal: %v", err)
+			utils.WriteJSON(w, http.StatusBadRequest, false, "Payload produk tidak valid", nil)
 			return
 		}
 
 		query := `UPDATE products SET name = $1, sku = $2, price = $3, cost = $4, stock = $5, category = $6, image = $7 WHERE id = $8`
 		result, err := config.DB.Exec(query, p.Name, p.SKU, p.Price, p.Cost, p.Stock, p.Category, p.Image, id)
 		if err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal mengupdate produk: "+err.Error(), nil)
+			log.Printf("Gagal update produk: %v", err)
+			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal mengupdate produk", nil)
 			return
 		}
 
@@ -104,7 +109,8 @@ func ProductDetailHandler(w http.ResponseWriter, r *http.Request) {
 		query := `DELETE FROM products WHERE id = $1`
 		result, err := config.DB.Exec(query, id)
 		if err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal menghapus produk: "+err.Error(), nil)
+			log.Printf("Gagal menghapus produk: %v", err)
+			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal menghapus produk", nil)
 			return
 		}
 

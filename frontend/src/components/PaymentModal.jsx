@@ -7,6 +7,8 @@ export default function PaymentModal({ isOpen, onClose }) {
   const { cart, discount, taxRate, checkout } = usePosStore()
   const [paymentMethod, setPaymentMethod] = useState('Cash')
   const [cashAmount, setCashAmount] = useState('')
+  const [customerName, setCustomerName] = useState('')
+  const [tableNumber, setTableNumber] = useState('')
   const [change, setChange] = useState(0)
   const [completedTransaction, setCompletedTransaction] = useState(null)
 
@@ -39,7 +41,7 @@ export default function PaymentModal({ isOpen, onClose }) {
     const finalCash = paymentMethod === 'Cash' ? parseFloat(cashAmount) : total
     
     try {
-      const transaction = await checkout(paymentMethod, finalCash)
+      const transaction = await checkout(paymentMethod, finalCash, customerName, tableNumber)
       if (transaction) {
         setCompletedTransaction(transaction)
         toast.success('Transaksi berhasil diproses!')
@@ -53,6 +55,8 @@ export default function PaymentModal({ isOpen, onClose }) {
     setCompletedTransaction(null)
     setPaymentMethod('Cash')
     setCashAmount('')
+    setCustomerName('')
+    setTableNumber('')
     setChange(0)
     onClose()
   }
@@ -69,7 +73,7 @@ export default function PaymentModal({ isOpen, onClose }) {
           </div>
 
           {/* Bill Summary */}
-          <div className="bg-slate-50 dark:bg-slate-850 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-sm">
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-sm">
             <div className="flex justify-between text-slate-500 dark:text-slate-400 font-medium">
               <span>Subtotal</span>
               <span className="text-slate-800 dark:text-slate-200 font-semibold">{formatIDR(subtotal)}</span>
@@ -87,6 +91,30 @@ export default function PaymentModal({ isOpen, onClose }) {
             <div className="flex justify-between text-slate-950 dark:text-white font-bold text-lg border-t border-slate-200 dark:border-slate-800 pt-2">
               <span>Total Tagihan</span>
               <span className="text-slate-900 dark:text-white font-extrabold">{formatIDR(total)}</span>
+            </div>
+          </div>
+
+          {/* Customer Info (Optional) */}
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Nama Pengunjung</label>
+              <input
+                type="text"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Opsional"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl py-2 px-3 focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 focus:bg-white dark:focus:bg-slate-800 text-xs font-semibold"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Nomor Meja</label>
+              <input
+                type="text"
+                value={tableNumber}
+                onChange={(e) => setTableNumber(e.target.value)}
+                placeholder="Opsional"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl py-2 px-3 focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 focus:bg-white dark:focus:bg-slate-800 text-xs font-semibold"
+              />
             </div>
           </div>
 
@@ -109,7 +137,7 @@ export default function PaymentModal({ isOpen, onClose }) {
                     className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all cursor-pointer ${
                       isSelected
                         ? 'border-slate-900 dark:border-white bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold shadow-sm'
-                        : 'border-slate-200 dark:border-slate-850 bg-slate-50 dark:bg-slate-850 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                        : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                     }`}
                   >
                     <IconComp className="w-6 h-6" />
@@ -131,7 +159,7 @@ export default function PaymentModal({ isOpen, onClose }) {
                     value={cashAmount}
                     onChange={(e) => setCashAmount(e.target.value)}
                     placeholder="Contoh: 50000"
-                    className="w-full bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white rounded-xl py-3 px-4 focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 focus:bg-white dark:focus:bg-slate-850 text-sm font-semibold"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl py-3 px-4 focus:outline-none focus:border-slate-800 dark:focus:border-slate-500 focus:bg-white dark:focus:bg-slate-800 text-sm font-semibold"
                   />
                 </div>
                 <div className="space-y-1">
@@ -152,7 +180,7 @@ export default function PaymentModal({ isOpen, onClose }) {
                       key={val}
                       type="button"
                       onClick={() => setCashAmount(val.toString())}
-                      className="bg-slate-100 dark:bg-slate-850 hover:bg-slate-200 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold px-3 py-1.5 rounded-lg text-xs transition-all shadow-sm cursor-pointer"
+                      className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold px-3 py-1.5 rounded-lg text-xs transition-all shadow-sm cursor-pointer"
                     >
                       {formatIDR(val)}
                     </button>
@@ -179,12 +207,29 @@ export default function PaymentModal({ isOpen, onClose }) {
           </div>
 
           {/* Receipt Preview */}
-          <div className="bg-slate-50 dark:bg-slate-850 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 text-left font-mono text-xs space-y-4 text-slate-700 dark:text-slate-350 border-dashed">
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 text-left font-mono text-xs space-y-4 text-slate-700 dark:text-slate-350 border-dashed">
             <div className="text-center space-y-0.5 border-b border-slate-200 dark:border-slate-800 pb-3">
               <p className="font-bold text-sm text-slate-900 dark:text-white">RestoPOS Cafe</p>
               <p className="text-[10px] text-slate-500 dark:text-slate-400">Kuningan, Jakarta Selatan</p>
               <p className="text-[9px] text-slate-500 dark:text-slate-400">{new Date(completedTransaction.timestamp).toLocaleString('id-ID')}</p>
             </div>
+
+            {(completedTransaction.customerName || completedTransaction.tableNumber) && (
+              <div className="border-b border-slate-200 dark:border-slate-800 pb-2 space-y-1">
+                {completedTransaction.customerName && (
+                  <div className="flex justify-between">
+                    <span>Pelanggan</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{completedTransaction.customerName}</span>
+                  </div>
+                )}
+                {completedTransaction.tableNumber && (
+                  <div className="flex justify-between">
+                    <span>Meja</span>
+                    <span className="font-bold text-slate-900 dark:text-white">{completedTransaction.tableNumber}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="space-y-1.5 border-b border-slate-200 dark:border-slate-800 pb-3">
               {completedTransaction.items.map((item) => (
@@ -210,13 +255,13 @@ export default function PaymentModal({ isOpen, onClose }) {
                 <span>Pajak (10%)</span>
                 <span>{formatIDR(completedTransaction.taxAmount)}</span>
               </div>
-              <div className="flex justify-between font-bold text-slate-900 dark:text-white text-sm border-t border-slate-200 dark:border-slate-850 pt-2">
+              <div className="flex justify-between font-bold text-slate-900 dark:text-white text-sm border-t border-slate-200 dark:border-slate-700 pt-2">
                 <span>Total Akhir</span>
                 <span>{formatIDR(completedTransaction.total)}</span>
               </div>
             </div>
 
-            <div className="border-t border-slate-200 dark:border-slate-850 pt-3 space-y-1 text-slate-500 dark:text-slate-400">
+            <div className="border-t border-slate-200 dark:border-slate-700 pt-3 space-y-1 text-slate-500 dark:text-slate-400">
               <div className="flex justify-between">
                 <span>Metode</span>
                 <span className="font-bold text-slate-900 dark:text-white">{completedTransaction.paymentMethod}</span>
@@ -233,7 +278,7 @@ export default function PaymentModal({ isOpen, onClose }) {
               )}
             </div>
 
-            <div className="text-center pt-3 border-t border-slate-200 dark:border-slate-850">
+            <div className="text-center pt-3 border-t border-slate-200 dark:border-slate-700">
               <p className="text-[10px] text-slate-500 dark:text-slate-400">Terima kasih atas kunjungan Anda!</p>
               <p className="text-[8px] text-slate-500 dark:text-slate-400">Kasir: {completedTransaction.cashier}</p>
             </div>

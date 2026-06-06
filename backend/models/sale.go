@@ -17,6 +17,8 @@ type SaleItem struct {
 type Sale struct {
 	ID              string     `json:"id"`
 	Cashier         string     `json:"cashier"`
+	CustomerName    string     `json:"customer_name"`
+	TableNumber     string     `json:"table_number"`
 	Subtotal        float64    `json:"subtotal"`
 	DiscountPercent float64    `json:"discount_percent"`
 	DiscountAmount  float64    `json:"discount_amount"`

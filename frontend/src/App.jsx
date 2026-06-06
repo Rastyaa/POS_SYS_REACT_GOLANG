@@ -1,33 +1,40 @@
 import { useState, useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { usePosStore } from './store/posStore'
 import Login from './components/Login'
 import DashboardView from './components/DashboardView'
 import OrderView from './components/OrderView'
 import MenuManagement from './components/MenuManagement'
 import SalesReport from './components/SalesReport'
-import { LayoutDashboard, ShoppingCart, Coffee, Database, FileBarChart2, LogOut, User, Sun, Moon } from 'lucide-react'
+import IncomingOrdersView from './components/IncomingOrdersView'
+import CustomerOrderView from './components/CustomerOrderView'
+import TableMapView from './components/TableMapView'
+import { LayoutDashboard, ShoppingCart, Coffee, Database, FileBarChart2, LogOut, User, Sun, Moon, BellRing, Map } from 'lucide-react'
 import { Toaster } from 'react-hot-toast'
 
-function App() {
-  const { user, logout, fetchProducts, fetchSalesHistory, theme, toggleTheme } = usePosStore()
+function POSApp() {
+  const { user, logout, fetchProducts, fetchSalesHistory, theme, toggleTheme, tableOrders, fetchTableOrders } = usePosStore()
   const [activeTab, setActiveTab] = useState('order')
 
-  // Fetch initial data when user is authenticated and set default landing page based on role
+  // Fetch initial data when user is authenticated
   useEffect(() => {
     if (user) {
       fetchProducts()
       fetchSalesHistory()
+      fetchTableOrders()
       if (user.role === 'Administrator') {
         setActiveTab('dashboard')
       } else {
-        setActiveTab('order')
+        setActiveTab('tableMap')
       }
     }
-  }, [user, fetchProducts, fetchSalesHistory])
+  }, [user, fetchProducts, fetchSalesHistory, fetchTableOrders])
 
   if (!user) {
     return <Login />
   }
+
+  const pendingCount = tableOrders.filter(o => o.status === 'Pending').length
 
   // Render correct view based on active tab
   const renderView = () => {
@@ -36,10 +43,14 @@ function App() {
         return <DashboardView />
       case 'order':
         return <OrderView />
+      case 'tableMap':
+        return <TableMapView setActiveTab={setActiveTab} />
+      case 'tableOrders':
+        return <IncomingOrdersView setActiveTab={setActiveTab} />
       case 'menu':
-        return user.role === 'Administrator' ? <MenuManagement /> : <div className="text-center py-20 text-slate-500">Hanya Administrator yang memiliki akses ke Menu Management.</div>
+        return user.role === 'Administrator' ? <MenuManagement /> : <div className="text-center py-20 text-slate-500">Akses ditolak.</div>
       case 'reports':
-        return user.role === 'Administrator' ? <SalesReport /> : <div className="text-center py-20 text-slate-500">Hanya Administrator yang memiliki akses ke Sales Report.</div>
+        return user.role === 'Administrator' ? <SalesReport /> : <div className="text-center py-20 text-slate-500">Akses ditolak.</div>
       default:
         return <OrderView />
     }
@@ -80,7 +91,7 @@ function App() {
               <User className="w-4 h-4" />
             </div>
             <div className="text-left leading-tight hidden sm:block">
-              <p className="text-xs font-bold text-slate-850 dark:text-slate-200">{user.username}</p>
+              <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{user.username}</p>
               <p className="text-[9px] text-slate-500 dark:text-slate-400 font-bold">{user.role}</p>
             </div>
           </div>
@@ -98,12 +109,12 @@ function App() {
       {/* Shell Container */}
       <div className="flex-1 flex flex-col md:flex-row max-w-7xl w-full mx-auto p-4 md:p-6 gap-6 z-10">
         
-        {/* Navigation Sidebar (Only shown for Administrator) */}
-        {user.role === 'Administrator' && (
-          <nav className="flex flex-row md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-2 md:pb-0 w-full md:w-[200px] md:shrink-0 self-start">
+        {/* Navigation Sidebar */}
+        <nav className="flex flex-row md:flex-col gap-1.5 overflow-x-auto md:overflow-visible pb-2 md:pb-0 w-full md:w-[200px] md:shrink-0 self-start custom-scrollbar">
+          {user.role === 'Administrator' && (
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === 'dashboard'
                   ? 'bg-slate-900 dark:bg-white border border-slate-950 dark:border-white text-white dark:text-slate-900 shadow-sm'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/40'
@@ -112,46 +123,79 @@ function App() {
               <LayoutDashboard className="w-4 h-4" />
               <span>Dashboard</span>
             </button>
+          )}
 
-            <button
-              onClick={() => setActiveTab('order')}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                activeTab === 'order'
-                  ? 'bg-slate-900 dark:bg-white border border-slate-950 dark:border-white text-white dark:text-slate-900 shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/40'
-              }`}
-            >
-              <ShoppingCart className="w-4 h-4" />
-              <span>Kasir (Order)</span>
-            </button>
+          <button
+            onClick={() => setActiveTab('tableMap')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'tableMap'
+                ? 'bg-slate-900 dark:bg-white border border-slate-950 dark:border-white text-white dark:text-slate-900 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/40'
+            }`}
+          >
+            <Map className="w-4 h-4" />
+            <span>Posisi Meja</span>
+          </button>
 
-            <button
-              onClick={() => setActiveTab('menu')}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                activeTab === 'menu'
-                  ? 'bg-slate-900 dark:bg-white border border-slate-950 dark:border-white text-white dark:text-slate-900 shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/40'
-              }`}
-            >
-              <Database className="w-4 h-4" />
-              <span>Menu / Stok</span>
-            </button>
+          <button
+            onClick={() => setActiveTab('tableOrders')}
+            className={`flex items-center justify-between px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'tableOrders'
+                ? 'bg-slate-900 dark:bg-white border border-slate-950 dark:border-white text-white dark:text-slate-900 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/40'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <BellRing className={`w-4 h-4 ${pendingCount > 0 ? 'text-amber-500 animate-pulse' : ''}`} />
+              <span>Pesanan Meja</span>
+            </div>
+            {pendingCount > 0 && (
+              <span className="bg-amber-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full min-w-[20px] text-center">{pendingCount}</span>
+            )}
+          </button>
 
-            <button
-              onClick={() => setActiveTab('reports')}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer ${
-                activeTab === 'reports'
-                  ? 'bg-slate-900 dark:bg-white border border-slate-950 dark:border-white text-white dark:text-slate-900 shadow-sm'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/40'
-              }`}
-            >
-              <FileBarChart2 className="w-4 h-4" />
-              <span>Laporan</span>
-            </button>
-          </nav>
-        )}
+          <button
+            onClick={() => setActiveTab('order')}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'order'
+                ? 'bg-slate-900 dark:bg-white border border-slate-950 dark:border-white text-white dark:text-slate-900 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/40'
+            }`}
+          >
+            <ShoppingCart className="w-4 h-4" />
+            <span>Kasir</span>
+          </button>
 
-        {/* View Contents Pane (Takes full width for Cashier since sidebar is hidden) */}
+          {user.role === 'Administrator' && (
+            <>
+              <button
+                onClick={() => setActiveTab('menu')}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === 'menu'
+                    ? 'bg-slate-900 dark:bg-white border border-slate-950 dark:border-white text-white dark:text-slate-900 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/40'
+                }`}
+              >
+                <Database className="w-4 h-4" />
+                <span>Menu / Stok</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('reports')}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold tracking-wide transition-all cursor-pointer whitespace-nowrap ${
+                  activeTab === 'reports'
+                    ? 'bg-slate-900 dark:bg-white border border-slate-950 dark:border-white text-white dark:text-slate-900 shadow-sm'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-slate-800/40'
+                }`}
+              >
+                <FileBarChart2 className="w-4 h-4" />
+                <span>Laporan</span>
+              </button>
+            </>
+          )}
+        </nav>
+
+        {/* View Contents Pane */}
         <main className="flex-1 min-w-0 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-4 md:p-6 rounded-3xl shadow-sm transition-colors duration-300">
           {renderView()}
         </main>
@@ -160,4 +204,13 @@ function App() {
   )
 }
 
-export default App;
+export default function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/table/:tableNumber" element={<CustomerOrderView />} />
+        <Route path="/*" element={<POSApp />} />
+      </Routes>
+    </Router>
+  )
+}

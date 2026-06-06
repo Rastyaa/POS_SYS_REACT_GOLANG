@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { usePosStore } from '../store/posStore'
-import { Search, Calendar, ChevronDown, ChevronUp, FileText, Printer, CheckCircle2, Receipt, ArrowRight } from 'lucide-react'
+import { Search, Calendar, ChevronDown, ChevronUp, FileText, Printer, CheckCircle2, Receipt, ArrowRight, DownloadCloud } from 'lucide-react'
+import * as XLSX from 'xlsx'
 
 export default function SalesReport() {
   const { salesHistory } = usePosStore()
@@ -21,8 +22,29 @@ export default function SalesReport() {
     setExpandedSaleId(expandedSaleId === id ? null : id)
   }
 
+  const exportToExcel = () => {
+    const exportData = filteredSales.map(sale => ({
+      'ID Transaksi': sale.id,
+      'Tanggal': new Date(sale.timestamp).toLocaleDateString('id-ID'),
+      'Waktu': new Date(sale.timestamp).toLocaleTimeString('id-ID'),
+      'Kasir': sale.cashier,
+      'Subtotal': sale.subtotal,
+      'Diskon (%)': sale.discountPercent,
+      'Pajak': sale.taxAmount,
+      'Total Akhir': sale.total,
+      'Keuntungan': sale.profit,
+      'Metode Bayar': sale.paymentMethod,
+      'Item Terjual': sale.items.map(i => `${i.name} (${i.quantity}x)`).join(', ')
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Riwayat Penjualan");
+    XLSX.writeFile(workbook, `Laporan_Penjualan_${new Date().toISOString().split('T')[0]}.xlsx`);
+  }
+
   return (
-    <div className="space-y-8 text-slate-850 dark:text-slate-100 transition-colors animate-fadeIn min-h-[calc(100vh-140px)] flex flex-col">
+    <div className="space-y-8 text-slate-900 dark:text-slate-100 transition-colors animate-fadeIn min-h-[calc(100vh-140px)] flex flex-col">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 relative z-10">
         <div>
@@ -31,6 +53,13 @@ export default function SalesReport() {
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mt-1">Lacak seluruh histori transaksi dan performa kasir harian.</p>
         </div>
+        <button
+          onClick={exportToExcel}
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/30 transition-all active:scale-95"
+        >
+          <DownloadCloud className="w-4 h-4" />
+          Export Excel
+        </button>
       </div>
 
       {/* Toolbar */}
@@ -123,7 +152,7 @@ export default function SalesReport() {
 
                 {/* Expanded Invoice Detail */}
                 <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[800px] opacity-100 mt-2' : 'max-h-0 opacity-0'}`}>
-                  <div className="bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/80 rounded-3xl p-6 md:p-8 shadow-inner relative z-0 ml-4 md:ml-12 mr-2 md:mr-6 mb-4">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 rounded-3xl p-6 md:p-8 shadow-inner relative z-0 ml-4 md:ml-12 mr-2 md:mr-6 mb-4">
                     {/* Decorative dash pattern at top like a receipt */}
                     <div className="absolute top-0 left-6 right-6 h-[2px] border-t-2 border-dashed border-slate-200 dark:border-slate-700"></div>
                     

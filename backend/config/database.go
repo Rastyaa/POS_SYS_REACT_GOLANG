@@ -38,6 +38,8 @@ func Connect() {
 	// Run auto migrations
 	migrateAndSeedUsers()
 	MigrateAndSeedProducts()
+	MigrateTableOrders()
+	MigrateSales()
 }
 
 func migrateAndSeedUsers() {
@@ -81,4 +83,30 @@ func seedUser(username, plainPassword, role string) {
 	if err != nil {
 		log.Fatalf("Gagal melakukan seeding user %s: %v", username, err)
 	}
+}
+
+// MigrateTableOrders creates the table_orders table if it doesn't exist
+func MigrateTableOrders() {
+	schema := `
+	CREATE TABLE IF NOT EXISTS table_orders (
+		id VARCHAR(50) PRIMARY KEY,
+		table_number VARCHAR(10) NOT NULL,
+		customer_name VARCHAR(100),
+		total NUMERIC(15,2) NOT NULL,
+		status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+		items JSONB NOT NULL,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);`
+	_, err := DB.Exec(schema)
+	if err != nil {
+		log.Fatalf("Gagal memigrasikan tabel table_orders: %v", err)
+	}
+	log.Println("Migrasi tabel table_orders berhasil!")
+}
+
+// MigrateSales ensures the sales table has all required columns
+func MigrateSales() {
+	_, _ = DB.Exec("ALTER TABLE sales ADD COLUMN IF NOT EXISTS customer_name VARCHAR(100);")
+	_, _ = DB.Exec("ALTER TABLE sales ADD COLUMN IF NOT EXISTS table_number VARCHAR(20);")
+	log.Println("Migrasi tabel sales (customer_name, table_number) berhasil!")
 }

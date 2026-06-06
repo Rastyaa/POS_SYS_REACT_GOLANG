@@ -58,7 +58,7 @@ export const usePosStore = create((set, get) => ({
     localStorage.removeItem('pos_token')
     localStorage.removeItem('pos_user')
     delete axios.defaults.headers.common['Authorization']
-    set({ user: null, token: null, products: [], salesHistory: [], cart: [], discount: 0 })
+    set({ user: null, token: null, products: [], salesHistory: [], cart: [], discount: 0, tableOrders: [] })
   },
 
   // Products/Catalog
@@ -76,6 +76,26 @@ export const usePosStore = create((set, get) => ({
       set({ products: withPhotos })
     } catch (err) {
       console.warn('Gagal terhubung ke Golang API, menggunakan Local Storage:', err.message)
+      let localProducts = getLocalDb.getProducts()
+      if (!Array.isArray(localProducts)) localProducts = []
+      const withPhotos = localProducts.map(p => (p ? { ...p, image: p.image || defaultImg } : p))
+      set({ products: withPhotos })
+    } finally {
+      set({ isLoadingProducts: false })
+    }
+  },
+
+  fetchPublicProducts: async () => {
+    set({ isLoadingProducts: true })
+    const defaultImg = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=800&auto=format&fit=crop&q=85'
+    try {
+      const res = await axios.get(`${API_BASE}/public/products`)
+      let productsData = res.data?.success ? res.data.data : res.data
+      if (!Array.isArray(productsData)) productsData = []
+      const withPhotos = productsData.map(p => (p ? { ...p, image: p.image || defaultImg } : p))
+      set({ products: withPhotos })
+    } catch (err) {
+      console.warn('Gagal memuat produk publik, fallback lokal:', err.message)
       let localProducts = getLocalDb.getProducts()
       if (!Array.isArray(localProducts)) localProducts = []
       const withPhotos = localProducts.map(p => (p ? { ...p, image: p.image || defaultImg } : p))
@@ -203,7 +223,17 @@ export const usePosStore = create((set, get) => ({
     try {
       const res = await axios.get(`${API_BASE}/sales`)
       const salesData = res.data.success ? res.data.data : res.data
-      set({ salesHistory: salesData || [] })
+      
+      const mappedSales = (salesData || []).map(s => ({
+        ...s,
+        discountPercent: s.discount_percent !== undefined ? s.discount_percent : s.discountPercent,
+        discountAmount: s.discount_amount !== undefined ? s.discount_amount : s.discountAmount,
+        taxAmount: s.tax_amount !== undefined ? s.tax_amount : s.taxAmount,
+        paymentMethod: s.payment_method || s.paymentMethod,
+        cashReceived: s.cash_received !== undefined ? s.cash_received : s.cashReceived,
+      }))
+      
+      set({ salesHistory: mappedSales })
     } catch (err) {
       console.warn('Gagal memuat history dari Golang API, menggunakan lokal:', err.message)
       set({ salesHistory: getLocalDb.getSales() })
@@ -212,7 +242,7 @@ export const usePosStore = create((set, get) => ({
     }
   },
 
-  checkout: async (paymentMethod, cashAmount = 0) => {
+  checkout: async (paymentMethod, cashAmount = 0, customerName = '', tableNumber = '') => {
     const { cart, discount, taxRate, products } = get()
     if (cart.length === 0) return null
 
@@ -246,7 +276,9 @@ export const usePosStore = create((set, get) => ({
       payment_method: paymentMethod,
       cash_received: paymentMethod === 'Cash' ? cashAmount : total,
       change,
-      cashier: get().user?.username || 'Cashier'
+      cashier: get().user?.username || 'Cashier',
+      customer_name: customerName,
+      table_number: tableNumber
     }
 
     const updatedProducts = products.map((p) => {
@@ -269,6 +301,8 @@ export const usePosStore = create((set, get) => ({
             taxAmount,
             cashReceived: newSale.cash_received,
             paymentMethod: newSale.payment_method,
+            customerName: newSale.customer_name,
+            tableNumber: newSale.table_number,
             items: newSale.items.map(i => ({ ...i, id: i.product_id }))
           },
           ...get().salesHistory
@@ -287,6 +321,8 @@ export const usePosStore = create((set, get) => ({
         taxAmount,
         cashReceived: newSale.cash_received,
         paymentMethod: newSale.payment_method,
+        customerName: newSale.customer_name,
+        tableNumber: newSale.table_number,
         items: newSale.items.map(i => ({ ...i, id: i.product_id }))
       }
       getLocalDb.saveSale(localSale)
@@ -306,7 +342,56 @@ export const usePosStore = create((set, get) => ({
       taxAmount,
       cashReceived: newSale.cash_received,
       paymentMethod: newSale.payment_method,
+      customerName: newSale.customer_name,
+      tableNumber: newSale.table_number,
       items: newSale.items.map(i => ({ ...i, id: i.product_id }))
+    }
+  },
+
+  // Table Orders Management
+  tableOrders: [],
+  isLoadingTableOrders: false,
+
+  fetchTableOrders: async () => {
+    set({ isLoadingTableOrders: true })
+    try {
+      const res = await axios.get(`${API_BASE}/orders`)
+      const ordersData = res.data?.success ? res.data.data : res.data
+      set({ tableOrders: Array.isArray(ordersData) ? ordersData : [] })
+    } catch (err) {
+      console.warn('Gagal memuat pesanan meja:', err.message)
+    } finally {
+      set({ isLoadingTableOrders: false })
+    }
+  },
+
+  submitTableOrder: async (tableNumber, customerName, items, total) => {
+    const orderId = `TBL-${tableNumber}-${Date.now().toString().slice(-5)}`
+    const payload = {
+      id: orderId,
+      table_number: tableNumber,
+      customer_name: customerName,
+      total,
+      items
+    }
+    try {
+      await axios.post(`${API_BASE}/public/orders`, payload)
+      return true
+    } catch (err) {
+      console.error('Gagal mengirim pesanan meja:', err.message)
+      throw err
+    }
+  },
+
+  updateTableOrderStatus: async (id, status) => {
+    try {
+      await axios.put(`${API_BASE}/orders/${id}/status`, { status })
+      set({
+        tableOrders: get().tableOrders.map(o => o.id === id ? { ...o, status } : o)
+      })
+    } catch (err) {
+      console.error('Gagal mengupdate status pesanan:', err.message)
+      throw err
     }
   }
 }))

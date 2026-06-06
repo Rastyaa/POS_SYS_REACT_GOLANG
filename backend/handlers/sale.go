@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 
 	"pos-backend/config"
@@ -15,7 +15,7 @@ import (
 func SalesHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		salesQuery := `SELECT id, cashier, subtotal, discount_percent, discount_amount, tax_amount, total, profit, payment_method, cash_received, change, timestamp FROM sales ORDER BY timestamp DESC`
+		salesQuery := `SELECT id, cashier, customer_name, table_number, subtotal, discount_percent, discount_amount, tax_amount, total, profit, payment_method, cash_received, change, timestamp FROM sales ORDER BY timestamp DESC`
 		sRows, err := config.DB.Query(salesQuery)
 		if err != nil {
 			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal mengambil riwayat transaksi", nil)
@@ -26,10 +26,13 @@ func SalesHandler(w http.ResponseWriter, r *http.Request) {
 		var sales []models.Sale
 		for sRows.Next() {
 			var s models.Sale
-			if err := sRows.Scan(&s.ID, &s.Cashier, &s.Subtotal, &s.DiscountPercent, &s.DiscountAmount, &s.TaxAmount, &s.Total, &s.Profit, &s.PaymentMethod, &s.CashReceived, &s.Change, &s.Timestamp); err != nil {
+			var customerName, tableNumber *string
+			if err := sRows.Scan(&s.ID, &s.Cashier, &customerName, &tableNumber, &s.Subtotal, &s.DiscountPercent, &s.DiscountAmount, &s.TaxAmount, &s.Total, &s.Profit, &s.PaymentMethod, &s.CashReceived, &s.Change, &s.Timestamp); err != nil {
 				utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal memindai riwayat transaksi", nil)
 				return
 			}
+			if customerName != nil { s.CustomerName = *customerName }
+			if tableNumber != nil { s.TableNumber = *tableNumber }
 
 			// Fetch Items for this Sale
 			itemsQuery := `SELECT product_id, name, price, quantity, subtotal FROM sale_items WHERE sale_id = $1`
@@ -72,11 +75,12 @@ func SalesHandler(w http.ResponseWriter, r *http.Request) {
 		defer tx.Rollback()
 
 		// 1. Insert header
-		saleInsert := `INSERT INTO sales (id, cashier, subtotal, discount_percent, discount_amount, tax_amount, total, profit, payment_method, cash_received, change, timestamp) 
-                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
-		_, err = tx.Exec(saleInsert, s.ID, s.Cashier, s.Subtotal, s.DiscountPercent, s.DiscountAmount, s.TaxAmount, s.Total, s.Profit, s.PaymentMethod, s.CashReceived, s.Change, s.Timestamp)
+		saleInsert := `INSERT INTO sales (id, cashier, customer_name, table_number, subtotal, discount_percent, discount_amount, tax_amount, total, profit, payment_method, cash_received, change, timestamp) 
+                       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`
+		_, err = tx.Exec(saleInsert, s.ID, s.Cashier, s.CustomerName, s.TableNumber, s.Subtotal, s.DiscountPercent, s.DiscountAmount, s.TaxAmount, s.Total, s.Profit, s.PaymentMethod, s.CashReceived, s.Change, s.Timestamp)
 		if err != nil {
-			utils.WriteJSON(w, http.StatusInternalServerError, false, fmt.Sprintf("Gagal menyimpan detail penjualan: %v", err), nil)
+			log.Printf("Gagal menyimpan detail penjualan: %v", err)
+			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal menyimpan detail penjualan", nil)
 			return
 		}
 
@@ -86,7 +90,8 @@ func SalesHandler(w http.ResponseWriter, r *http.Request) {
 			itemInsert := `INSERT INTO sale_items (sale_id, product_id, name, price, quantity, subtotal) VALUES ($1, $2, $3, $4, $5, $6)`
 			_, err = tx.Exec(itemInsert, s.ID, item.ProductID, item.Name, item.Price, item.Quantity, item.Subtotal)
 			if err != nil {
-				utils.WriteJSON(w, http.StatusInternalServerError, false, fmt.Sprintf("Gagal menyimpan item penjualan: %v", err), nil)
+				log.Printf("Gagal menyimpan item penjualan: %v", err)
+				utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal menyimpan item penjualan", nil)
 				return
 			}
 
@@ -94,7 +99,8 @@ func SalesHandler(w http.ResponseWriter, r *http.Request) {
 			stockUpdate := `UPDATE products SET stock = GREATEST(0, stock - $1) WHERE id = $2`
 			_, err = tx.Exec(stockUpdate, item.Quantity, item.ProductID)
 			if err != nil {
-				utils.WriteJSON(w, http.StatusInternalServerError, false, fmt.Sprintf("Gagal memperbarui stok barang: %v", err), nil)
+				log.Printf("Gagal memperbarui stok barang: %v", err)
+				utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal memperbarui stok barang", nil)
 				return
 			}
 		}
