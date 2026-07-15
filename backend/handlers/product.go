@@ -15,7 +15,7 @@ import (
 func ProductsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		rows, err := config.DB.Query("SELECT id, sku, name, price, cost, stock, category, COALESCE(image, ''), created_at FROM products ORDER BY name ASC")
+		rows, err := config.DB.Query("SELECT id, sku, name, price, cost, stock, category, COALESCE(image, ''), COALESCE(description, ''), created_at FROM products ORDER BY name ASC")
 		if err != nil {
 			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal mengambil data produk", nil)
 			return
@@ -25,7 +25,7 @@ func ProductsHandler(w http.ResponseWriter, r *http.Request) {
 		var products []models.Product
 		for rows.Next() {
 			var p models.Product
-			if err := rows.Scan(&p.ID, &p.SKU, &p.Name, &p.Price, &p.Cost, &p.Stock, &p.Category, &p.Image, &p.CreatedAt); err != nil {
+			if err := rows.Scan(&p.ID, &p.SKU, &p.Name, &p.Price, &p.Cost, &p.Stock, &p.Category, &p.Image, &p.Description, &p.CreatedAt); err != nil {
 				utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal memindai data produk", nil)
 				return
 			}
@@ -48,10 +48,10 @@ func ProductsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		query := `INSERT INTO products (sku, name, price, cost, stock, category, image) 
-                  VALUES ($1, $2, $3, $4, $5, $6, $7) 
+		query := `INSERT INTO products (sku, name, description, price, cost, stock, category, image)
+                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                   RETURNING id, created_at`
-		err := config.DB.QueryRow(query, p.SKU, p.Name, p.Price, p.Cost, p.Stock, p.Category, p.Image).Scan(&p.ID, &p.CreatedAt)
+		err := config.DB.QueryRow(query, p.SKU, p.Name, p.Description, p.Price, p.Cost, p.Stock, p.Category, p.Image).Scan(&p.ID, &p.CreatedAt)
 		if err != nil {
 			log.Printf("Gagal menyimpan produk: %v", err)
 			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal menyimpan produk baru", nil)
@@ -89,8 +89,8 @@ func ProductDetailHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		query := `UPDATE products SET name = $1, sku = $2, price = $3, cost = $4, stock = $5, category = $6, image = $7 WHERE id = $8`
-		result, err := config.DB.Exec(query, p.Name, p.SKU, p.Price, p.Cost, p.Stock, p.Category, p.Image, id)
+		query := `UPDATE products SET name = $1, sku = $2, price = $3, cost = $4, stock = $5, category = $6, image = $7, description = $8 WHERE id = $9`
+		result, err := config.DB.Exec(query, p.Name, p.SKU, p.Price, p.Cost, p.Stock, p.Category, p.Image, p.Description, id)
 		if err != nil {
 			log.Printf("Gagal update produk: %v", err)
 			utils.WriteJSON(w, http.StatusInternalServerError, false, "Gagal mengupdate produk", nil)

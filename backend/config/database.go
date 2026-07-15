@@ -37,6 +37,7 @@ func Connect() {
 	
 	// Run auto migrations
 	migrateAndSeedUsers()
+	MigrateProducts()
 	MigrateAndSeedProducts()
 	MigrateTableOrders()
 	MigrateSales()
@@ -109,4 +110,26 @@ func MigrateSales() {
 	_, _ = DB.Exec("ALTER TABLE sales ADD COLUMN IF NOT EXISTS customer_name VARCHAR(100);")
 	_, _ = DB.Exec("ALTER TABLE sales ADD COLUMN IF NOT EXISTS table_number VARCHAR(20);")
 	log.Println("Migrasi tabel sales (customer_name, table_number) berhasil!")
+}
+
+// MigrateProducts ensures the products table exists with all required columns
+func MigrateProducts() {
+	schema := `
+	CREATE TABLE IF NOT EXISTS products (
+		id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+		sku VARCHAR(50) UNIQUE NOT NULL,
+		name VARCHAR(255) NOT NULL,
+		price NUMERIC(15,2) NOT NULL,
+		cost NUMERIC(15,2) NOT NULL DEFAULT 0,
+		stock INT NOT NULL DEFAULT 0,
+		category VARCHAR(100) NOT NULL,
+		image TEXT,
+		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+	);`
+	_, err := DB.Exec(schema)
+	if err != nil {
+		log.Fatalf("Gagal memigrasikan tabel products: %v", err)
+	}
+	_, _ = DB.Exec("ALTER TABLE products ADD COLUMN IF NOT EXISTS description TEXT;")
+	log.Println("Migrasi tabel products (description) berhasil!")
 }
