@@ -13,7 +13,7 @@ export default function OrderView() {
   const formatIDR = (num) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num)
 
   // Dynamic Categories merge with standard resto categories
-  const defaultCategories = ['Makanan Utama', 'Minuman', 'Cemilan', 'Dessert']
+  const defaultCategories = ['Makanan Utama', 'Minuman', 'Kopi', 'Cemilan', 'Dessert']
   const categories = ['Semua', ...new Set([...defaultCategories, ...products.map((p) => p.category).filter(Boolean)])]
 
   const filteredProducts = products.filter((p) => {

@@ -64,7 +64,7 @@ export default function PaymentModal({ isOpen, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/65 backdrop-blur-sm px-4">
       {!completedTransaction ? (
-        <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-6 text-slate-800 dark:text-slate-100 transition-colors">
+        <div className="w-full max-w-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm space-y-6 text-slate-800 dark:text-slate-100 transition-colors">
           <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-4">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white">Ringkasan Pembayaran</h3>
             <button onClick={onClose} className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all cursor-pointer">
@@ -73,7 +73,7 @@ export default function PaymentModal({ isOpen, onClose }) {
           </div>
 
           {/* Bill Summary */}
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-sm">
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg border border-slate-200 dark:border-slate-800 space-y-2.5 text-sm">
             <div className="flex justify-between text-slate-500 dark:text-slate-400 font-medium">
               <span>Subtotal</span>
               <span className="text-slate-800 dark:text-slate-200 font-semibold">{formatIDR(subtotal)}</span>
@@ -134,7 +134,7 @@ export default function PaymentModal({ isOpen, onClose }) {
                     key={method.name}
                     type="button"
                     onClick={() => setPaymentMethod(method.name)}
-                    className={`flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border transition-all cursor-pointer ${
+                    className={`flex flex-col items-center justify-center gap-2 p-4 rounded-lg border transition-all cursor-pointer ${
                       isSelected
                         ? 'border-slate-900 dark:border-white bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold shadow-sm'
                         : 'border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
@@ -199,7 +199,7 @@ export default function PaymentModal({ isOpen, onClose }) {
         </div>
       ) : (
         /* Completed Transaction Receipt Screen */
-        <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl space-y-6 text-slate-800 dark:text-slate-100 text-center animate-scaleIn">
+        <div className="w-full max-w-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-sm space-y-6 text-slate-800 dark:text-slate-100 text-center animate-scaleIn">
           <div className="flex flex-col items-center justify-center space-y-2">
             <CheckCircle className="w-12 h-12 text-emerald-600 dark:text-emerald-500" />
             <h3 className="text-xl font-bold text-slate-900 dark:text-white">Transaksi Sukses!</h3>
@@ -207,7 +207,7 @@ export default function PaymentModal({ isOpen, onClose }) {
           </div>
 
           {/* Receipt Preview */}
-          <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 text-left font-mono text-xs space-y-4 text-slate-700 dark:text-slate-350 border-dashed">
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-lg border border-slate-200 dark:border-slate-800 text-left font-mono text-xs space-y-4 text-slate-700 dark:text-slate-350 border-dashed">
             <div className="text-center space-y-0.5 border-b border-slate-200 dark:border-slate-800 pb-3">
               <p className="font-bold text-sm text-slate-900 dark:text-white">RestoPOS Cafe</p>
               <p className="text-[10px] text-slate-500 dark:text-slate-400">Kuningan, Jakarta Selatan</p>

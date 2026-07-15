@@ -48,14 +48,14 @@ export default function SalesReport() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 relative z-10">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-600 dark:from-white dark:to-slate-400">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
             Laporan Penjualan
           </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mt-1">Lacak seluruh histori transaksi dan performa kasir harian.</p>
         </div>
         <button
           onClick={exportToExcel}
-          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-emerald-500/30 transition-all active:scale-95"
+          className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-sm transition-colors active:scale-95"
         >
           <DownloadCloud className="w-4 h-4" />
           Export Excel
@@ -63,7 +63,7 @@ export default function SalesReport() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 p-4 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)] transition-colors relative z-10">
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl shadow-sm transition-colors relative z-10">
         {/* Search */}
         <div className="relative w-full sm:max-w-md group">
           <Search className="absolute inset-y-0 left-4 flex items-center w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 my-auto transition-colors" />
@@ -72,10 +72,10 @@ export default function SalesReport() {
             placeholder="Cari ID Transaksi, Metode Pembayaran, atau Kasir..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 text-slate-900 dark:text-white rounded-2xl py-3 pl-11 pr-4 placeholder-slate-400 focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10 transition-all text-sm font-bold shadow-inner"
+            className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/60 text-slate-900 dark:text-white rounded-lg py-3 pl-11 pr-4 placeholder-slate-400 focus:outline-none focus:border-indigo-500 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/10 transition-all text-sm font-bold shadow-inner"
           />
         </div>
-        <div className="text-xs text-slate-600 dark:text-slate-300 flex items-center gap-2.5 font-bold bg-white dark:bg-slate-800 px-4 py-3 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-sm whitespace-nowrap">
+        <div className="text-xs text-slate-600 dark:text-slate-300 flex items-center gap-2.5 font-bold bg-white dark:bg-slate-800 px-4 py-3 rounded-lg border border-slate-200/60 dark:border-slate-700/60 shadow-sm whitespace-nowrap">
           <Calendar className="w-4 h-4 text-indigo-500" />
           <span>Hari Ini: {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
         </div>
@@ -100,10 +100,10 @@ export default function SalesReport() {
                 {/* Main Row */}
                 <div
                   onClick={() => toggleExpand(sale.id)}
-                  className={`relative z-10 grid grid-cols-1 md:grid-cols-12 gap-4 items-center p-4 md:px-6 md:py-4 rounded-3xl border transition-all duration-300 cursor-pointer ${
+                  className={`relative z-10 grid grid-cols-1 md:grid-cols-12 gap-4 items-center p-4 md:px-6 md:py-4 rounded-xl border transition-all duration-300 cursor-pointer ${
                     isExpanded 
-                      ? 'bg-white dark:bg-slate-800 border-indigo-200 dark:border-indigo-900/50 shadow-lg shadow-indigo-500/5' 
-                      : 'bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm border-white/20 dark:border-slate-800/50 hover:bg-white dark:hover:bg-slate-800 hover:shadow-md hover:border-slate-200/80 dark:hover:border-slate-700'
+                      ? 'bg-white dark:bg-slate-800 border-indigo-200 dark:border-indigo-900/50 shadow-sm' 
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:bg-white dark:hover:bg-slate-800 hover:shadow-md hover:border-slate-200/80 dark:hover:border-slate-700'
                   }`}
                 >
                   <div className="col-span-1 md:col-span-3 flex items-center gap-3">
@@ -152,7 +152,7 @@ export default function SalesReport() {
 
                 {/* Expanded Invoice Detail */}
                 <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[800px] opacity-100 mt-2' : 'max-h-0 opacity-0'}`}>
-                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 rounded-3xl p-6 md:p-8 shadow-inner relative z-0 ml-4 md:ml-12 mr-2 md:mr-6 mb-4">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 rounded-xl p-6 md:p-8 shadow-inner relative z-0 ml-4 md:ml-12 mr-2 md:mr-6 mb-4">
                     {/* Decorative dash pattern at top like a receipt */}
                     <div className="absolute top-0 left-6 right-6 h-[2px] border-t-2 border-dashed border-slate-200 dark:border-slate-700"></div>
                     
@@ -164,7 +164,7 @@ export default function SalesReport() {
                         </h5>
                         <div className="space-y-3">
                           {sale.items.map((item) => (
-                            <div key={item.id} className="flex items-start justify-between bg-slate-50/50 dark:bg-slate-900/30 p-3 rounded-2xl border border-slate-100 dark:border-slate-800">
+                            <div key={item.id} className="flex items-start justify-between bg-slate-50/50 dark:bg-slate-900/30 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
                               <div className="flex gap-3">
                                 <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-black text-xs">
                                   {item.quantity}x
@@ -194,7 +194,7 @@ export default function SalesReport() {
                           </button>
                         </div>
 
-                        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 space-y-3 text-sm shadow-sm relative overflow-hidden">
+                        <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-5 border border-slate-100 dark:border-slate-800 space-y-3 text-sm shadow-sm relative overflow-hidden">
                           {/* Receipt zig-zag decorative bottom */}
                           <div className="absolute -bottom-2 left-0 right-0 h-4 bg-[radial-gradient(circle,transparent,transparent_50%,#f8fafc_50%,#f8fafc_100%)] dark:bg-[radial-gradient(circle,transparent,transparent_50%,#0f172a_50%,#0f172a_100%)] bg-[length:12px_12px]"></div>
 
@@ -234,7 +234,7 @@ export default function SalesReport() {
           })}
 
           {filteredSales.length === 0 && (
-            <div className="text-center py-24 flex flex-col items-center justify-center bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-white/20 dark:border-slate-800/50 rounded-3xl">
+            <div className="text-center py-24 flex flex-col items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl">
               <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-3">
                 <FileText className="w-8 h-8 text-slate-400" />
               </div>

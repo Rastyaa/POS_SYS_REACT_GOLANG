@@ -109,6 +109,7 @@ export const usePosStore = create((set, get) => ({
     const newProduct = {
       name: product.name,
       sku: product.sku,
+      description: product.description || '',
       price: Number(product.price),
       cost: Number(product.cost),
       stock: Number(product.stock),
@@ -135,6 +136,7 @@ export const usePosStore = create((set, get) => ({
     const cleanedFields = {
       name: updatedFields.name,
       sku: updatedFields.sku,
+      description: updatedFields.description !== undefined ? updatedFields.description : undefined,
       price: updatedFields.price !== undefined ? Number(updatedFields.price) : undefined,
       cost: updatedFields.cost !== undefined ? Number(updatedFields.cost) : undefined,
       stock: updatedFields.stock !== undefined ? Number(updatedFields.stock) : undefined,

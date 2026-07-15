@@ -28,18 +28,15 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center px-4 relative overflow-hidden transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center px-4 transition-colors duration-300">
       <Toaster position="top-right" />
-      {/* Decorative gradients */}
-      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-blue-400/10 dark:bg-blue-600/5 blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-20%] right-[-10%] w-[500px] h-[500px] rounded-full bg-indigo-400/10 dark:bg-indigo-600/5 blur-[120px] pointer-events-none" />
 
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-3xl shadow-xl space-y-8 relative z-10">
+      <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-xl shadow-sm space-y-8">
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 mb-2 shadow-lg group hover:scale-105 transition-all duration-300">
-            <Coffee className="w-8 h-8 animate-pulse" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-lg bg-indigo-600 text-white mb-2">
+            <Coffee className="w-7 h-7" />
           </div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">RestoPOS</h2>
+          <h2 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">RestoPOS</h2>
           <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Masuk ke Point of Sale & Inventory</p>
         </div>
 
@@ -83,7 +80,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 font-extrabold py-3.5 rounded-xl shadow-lg transition-all active:scale-[0.98] text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl shadow-sm transition-colors active:scale-[0.98] text-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <>
