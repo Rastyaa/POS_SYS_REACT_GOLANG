@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import axios from 'axios'
 import { getLocalDb } from '../supabase'
 
-const API_BASE = 'http://localhost:8080/api'
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
 
 // Initialize Axios Authorization header from localStorage on startup
 const initialToken = localStorage.getItem('pos_token')
