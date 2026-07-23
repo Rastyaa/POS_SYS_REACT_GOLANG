@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"pos-backend/config"
@@ -59,7 +60,10 @@ func main() {
 	handler := middleware.SecurityHeaders(middleware.CORS(mux))
 
 	// 4. Start HTTP Server
-	port := "8080"
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 	log.Printf("Backend POS Go berjalan di http://localhost:%s\n", port)
 	if err := http.ListenAndServe(":"+port, handler); err != nil {
 		log.Fatalf("Gagal menjalankan server: %v", err)
